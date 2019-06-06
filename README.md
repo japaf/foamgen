@@ -18,7 +18,7 @@ Make sure you have the following dependencies installed:
 On Ubuntu, all of these can be installed using:
 
 ```bash
-sudo ./install_dependecies.sh
+sudo ./install_dependencies.sh
 ```
 
 ### Module
