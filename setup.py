@@ -16,6 +16,7 @@ setuptools.setup(
     url="https://github.com/japaf/foamgen",
     packages=setuptools.find_packages(),
     classifiers=[
+        "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: C++",
