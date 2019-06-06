@@ -4,9 +4,19 @@ Foamgen can create spatially three-dimensional images of foam morphology with de
 
 ## Installation
 
-The code depends on several third-party applications.
+Make sure you have the following dependencies installed:
 
-First, install following system packages, e.g., on Ubuntu:
+- [packing-generation](https://github.com/VasiliBaranov/packing-generation.git)
+- [Neper](http://neper.sourceforge.net/index.html)
+- [Voro++](http://math.lbl.gov/voro++/about.html)
+- [meshconv](http://www.patrickmin.com/meshconv)
+- [binvox](http://www.patrickmin.com/binvox/)
+
+On Ubuntu, all of these can be installed using:
+
+```bash
+sudo ./install_dependecies.sh
+```
 
 ```bash
 sudo apt-get install libmatheval-dev gsl-bin libgsl0-dev python-vtk \
