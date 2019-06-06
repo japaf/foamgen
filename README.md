@@ -1,41 +1,46 @@
 # Foamgen
 
-## Scope of this module
-
-This module contains an utility, which can create a spatially three-dimensional image of foam morphology with desired foam density, cell size distribution and strut content. This module does not contain any MoDeNa model.
+Foamgen can create spatially three-dimensional images of foam morphology with desired foam density, cell size distribution and strut content. Can be used to create both closed-cell and open-cell foams. Capable of generation of both structured (uniform grid) and unstructured meshes.
 
 ## Installation
 
 The code depends on several third-party applications.
 
-To install all of these on Ubuntu, do:
+First, install following system packages, e.g., on Ubuntu:
 
 ```bash
-sudo apt-get install libmatheval-dev gmsh gsl-bin libgsl0-dev python-vtk \
-    lib3ds-1-3 libjpeg62 freeglut3 libnlopt-dev libboost-dev \ libboost-date-time-dev libboost-thread-dev zlib1g-dev libpng12-dev \
+sudo apt-get install libmatheval-dev gsl-bin libgsl0-dev python-vtk \
+    lib3ds-1-3 libjpeg62 freeglut3 libnlopt-dev libboost-dev \
+    libboost-date-time-dev libboost-thread-dev zlib1g-dev libpng12-dev \
     libjpeg8-dev libtiff5-dev libopenexr-dev povray
 ```
 
-Install python packages using pip
+Second, install python packages using pip:
 
 ```bash
-pip install spack vapory
+pip install spack vapory gmsh-sdk
 ```
 
-Install packing-generation from github and copy the executable to PATH
+Third, install packing-generation from source and copy the executable to PATH
 
 ```bash
-cd where-you-want-source-files
+mkdir -p ~/tmp
+cd ~/tmp
 git clone https://github.com/VasiliBaranov/packing-generation.git
 cd packing-generation/_Release
 make
 cp PackingGeneration.exe ~/bin/
 ```
 
-Then download and install `neper` version 3 from http://neper.sourceforge.net/downloads.html.
-You will need to unpack `neper`, go to its `src` folder and then:
+Fourth, download and install `neper` from http://neper.sourceforge.net/downloads.html. Installation steps:
 
 ```bash
+NEPER_VERSION=3.4.0
+mkdir -p ~/tmp
+cd ~/tmp
+wget https://github.com/rquey/neper/archive/$NEPER_VERSION.tar.gz
+tar -xf $NEPER_VERSION.tar.gz
+cd neper-$NEPER_VERSION/src
 mkdir build
 cd build
 cmake ..
@@ -48,10 +53,10 @@ Download `meshconv` from http://www.patrickmin.com/meshconv/, download
 
 ```bash
 wget http://www.patrickmin.com/meshconv/linux64/meshconv
-chmod +x meshconv
+chmod ug+x meshconv
 sudo mv meshconv /usr/local/bin/meshconv
 wget http://www.patrickmin.com/binvox/linux64/binvox
-chmod +x binvox
+chmod ug+x binvox
 sudo mv binvox /usr/local/bin/binvox
 ```
 
@@ -132,7 +137,7 @@ case you need to edit the `run.py` script.
 
 ## Outputs
 
-Several output files are created. Structured mesh is in `{filename}_str.vtk`, unstructured mesh is in `{filename}_uns.vtk`.
+Several output files are created. Structured mesh is in `{filename}_str.vtk`, unstructured mesh is in `{filename}_uns.msh`.
 
 Generally, `.geo`, and `.msh` files can be viewed with `gmsh`. `.stl`, `.ply` and `.vtk`
 files can be viewed with `paraview`.
