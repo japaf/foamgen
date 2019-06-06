@@ -4,6 +4,8 @@ Foamgen can create spatially three-dimensional images of foam morphology with de
 
 ## Installation
 
+### Dependencies
+
 Make sure you have the following dependencies installed:
 
 - [packing-generation](https://github.com/VasiliBaranov/packing-generation.git)
@@ -11,6 +13,7 @@ Make sure you have the following dependencies installed:
 - [Voro++](http://math.lbl.gov/voro++/about.html)
 - [meshconv](http://www.patrickmin.com/meshconv)
 - [binvox](http://www.patrickmin.com/binvox/)
+- [GSL](http://www.gnu.org/software/gsl/)
 
 On Ubuntu, all of these can be installed using:
 
@@ -18,66 +21,13 @@ On Ubuntu, all of these can be installed using:
 sudo ./install_dependecies.sh
 ```
 
-```bash
-sudo apt-get install libmatheval-dev gsl-bin libgsl0-dev python-vtk \
-    lib3ds-1-3 libjpeg62 freeglut3 libnlopt-dev libboost-dev \
-    libboost-date-time-dev libboost-thread-dev zlib1g-dev libpng12-dev \
-    libjpeg8-dev libtiff5-dev libopenexr-dev povray
-```
+### Module
 
-Second, install python packages using pip:
+Install python packages using pip:
 
 ```bash
 pip install spack vapory gmsh-sdk
 ```
-
-Third, install packing-generation from source and copy the executable to PATH
-
-```bash
-mkdir -p ~/tmp
-cd ~/tmp
-git clone https://github.com/VasiliBaranov/packing-generation.git
-cd packing-generation/_Release
-make
-cp PackingGeneration.exe ~/bin/
-```
-
-Fourth, download and install `neper` from http://neper.sourceforge.net/downloads.html. Installation steps:
-
-```bash
-NEPER_VERSION=3.4.0
-mkdir -p ~/tmp
-cd ~/tmp
-wget https://github.com/rquey/neper/archive/$NEPER_VERSION.tar.gz
-tar -xf $NEPER_VERSION.tar.gz
-cd neper-$NEPER_VERSION/src
-mkdir build
-cd build
-cmake ..
-make
-sudo make install
-```
-
-Download `meshconv` from http://www.patrickmin.com/meshconv/, download
-`binvox` from http://www.patrickmin.com/binvox/ and copy `meshconv` and `binvox` to `$PATH`. You can do this manually or in terminal using
-
-```bash
-wget http://www.patrickmin.com/meshconv/linux64/meshconv
-chmod ug+x meshconv
-sudo mv meshconv /usr/local/bin/meshconv
-wget http://www.patrickmin.com/binvox/linux64/binvox
-chmod ug+x binvox
-sudo mv binvox /usr/local/bin/binvox
-```
-
-To install `voro++`:
-
-```bash
-sudo ./install_voro++.sh
-```
-
-If that doesn't work, you will need to download it from
-http://math.lbl.gov/voro++/download/ and install it manually.
 
 To compile `foamreconstr`:
 

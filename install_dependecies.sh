@@ -1,8 +1,4 @@
 #!/bin/bash
-apts () {
-    sudo apt-get install
-}
-
 packinggeneration () {
     cd /tmp
     git clone https://github.com/VasiliBaranov/packing-generation.git
@@ -14,6 +10,7 @@ packinggeneration () {
 }
 
 neper () {
+    sudo apt-get install libgsl-dev libscotch-dev povray libnlopt-dev
     NEPER_VERSION=3.4.0
     echo "Installing NEPER version $NEPER_VERSION"
     cd /tmp
@@ -56,9 +53,13 @@ binvox () {
     sudo mv binvox /usr/local/bin/binvox
 }
 
-# apts |& tee apts.log
+gsl () {
+    sudo apt-get install libgsl-dev
+}
+
 packinggeneration |& tee packinggeneration.log
-# neper |& tee neper.log
-# packinggeneration |& tee packinggeneration.log
-# meshconv |& tee meshconv.log
-# binvox |& tee binvox.log
+neper |& tee neper.log
+voroplusplus |& tee voroplusplus.log
+meshconv |& tee meshconv.log
+binvox |& tee binvox.log
+gsl |& gsl.log
