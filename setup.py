@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-import sysconfig
 import platform
 import subprocess
 
@@ -11,7 +10,6 @@ from shutil import copyfile, copymode
 from distutils.version import LooseVersion
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
-from setuptools.command.test import test as TestCommand
 
 def long_desc():
     """Create long description."""
@@ -21,12 +19,14 @@ def long_desc():
 
 
 class CMakeExtension(Extension):
+    """Taken from https://www.benjack.io/2018/02/02/python-cpp-revisited.html"""
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
 class CMakeBuild(build_ext):
+    """Taken from https://www.benjack.io/2018/02/02/python-cpp-revisited.html"""
     def run(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -48,6 +48,7 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(
             os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+                      '-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable]
 
         cfg = 'Debug' if self.debug else 'Release'
@@ -75,8 +76,9 @@ class CMakeBuild(build_ext):
         subprocess.check_call(['cmake', '--build', '.'] + build_args,
                               cwd=self.build_temp)
         # Copy *_test file to tests directory
-        test_bin = os.path.join(self.build_temp, 'python_cpp_example_test')
-        self.copy_test_file(test_bin)
+        test_bin = os.path.join(self.build_temp, 'foamgen_test')
+        if os.path.isfile(test_bin):
+            self.copy_test_file(test_bin)
         print()  # Add an empty line for cleaner output
 
     def copy_test_file(self, src_file):
@@ -111,8 +113,9 @@ setup(
     url="https://github.com/japaf/foamgen",
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    ext_modules=[CMakeExtension('python_cpp_example/python_cpp_example')],
+    ext_modules=[CMakeExtension('foamgen/foamgen')],
     cmdclass=dict(build_ext=CMakeBuild),
+    scripts=[os.path.join('scripts', 'foamreconstr')],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",

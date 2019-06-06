@@ -23,18 +23,16 @@ sudo ./install_dependencies.sh
 
 ### Module
 
-Install python packages using pip:
+Install using pip:
+
+```bash
+pip install .
+```
 
 ```bash
 pip install spack vapory gmsh-sdk
 ```
 
-To compile `foamreconstr`:
-
-```bash
-cmake .
-make
-```
 
 ## Files
 
