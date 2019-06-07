@@ -26,7 +26,9 @@ class CMakeExtension(Extension):
 
 
 class CMakeBuild(build_ext):
-    """Taken from https://www.benjack.io/2018/02/02/python-cpp-revisited.html"""
+    """
+    Adapted from https://www.benjack.io/2018/02/02/python-cpp-revisited.html
+    """
     def run(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -116,6 +118,8 @@ setup(
     ext_modules=[CMakeExtension('foamgen/foamgen')],
     cmdclass=dict(build_ext=CMakeBuild),
     scripts=[os.path.join('scripts', 'foamreconstr')],
+    install_requires=['numpy', 'scipy', 'matplotlib', 'vapory',
+                      'blessings', 'spack', 'vtk', 'docopt', 'gmsh-sdk'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",

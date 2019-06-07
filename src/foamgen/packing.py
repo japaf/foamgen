@@ -16,7 +16,7 @@ import time
 import random
 import subprocess
 import numpy as np
-from numpy import array, pi, linspace, exp, log, sqrt, reshape
+from numpy import pi, linspace, reshape
 from scipy.stats import lognorm
 import matplotlib.pyplot as plt
 import spack

@@ -25,7 +25,7 @@ import shutil
 import subprocess as sp
 from blessings import Terminal
 from docopt import docopt
-from scipy.optimize import minimize_scalar as minimize_scalar
+from scipy.optimize import minimize_scalar
 import packing
 import tessellation
 import periodicBox

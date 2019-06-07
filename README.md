@@ -29,11 +29,6 @@ Install using pip:
 pip install .
 ```
 
-```bash
-pip install spack vapory gmsh-sdk
-```
-
-
 ## Files
 
 The folder `FoamConstruction` contains following files:
