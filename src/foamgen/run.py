@@ -21,8 +21,6 @@ from . import tessellation
 from . import periodicBox
 from . import vtkconv
 from . import geo_tools
-# Creates terminal for colour output
-TERM = Terminal()
 
 
 def parse():
@@ -31,14 +29,14 @@ def parse():
         prog='foamgen',
         error_handler=yp.usage_and_exit_error_handler,
         description='Generate foam morphology.')
+    prs.add_argument('-v', '--verbose', default=False,
+                     action='store_true', help='verbose output')
     prs.add_argument('-c', '--config', action=yp.ActionConfigFile,
                      help='name of config file')
     prs.add_argument('-f', '--filename', default='Foam',
                      help='base filename')
     prs.add_argument('-p', '--pack.active', default=False,
                      action='store_true', help='create sphere packing')
-    prs.add_argument('--pack.dsize', default=1,
-                     help='domain size')
     prs.add_argument('--pack.ncells', default=27,
                      help='number of cells')
     prs.add_argument('--pack.shape', default=0.2,
@@ -69,6 +67,8 @@ def parse():
                      help='convert mesh to *.xml for fenics')
     prs.add_argument('-s', '--smesh.active', default=False,
                      action='store_true', help='create structured mesh')
+    prs.add_argument('--pack.dsize', default=1,
+                     help='domain size')
     prs.add_argument('--smesh.render', default=False,
                      action='store_true', help='visualize structured mesh')
     prs.add_argument('--smesh.strut', default=0.6,
@@ -83,7 +83,45 @@ def parse():
                      action='store_true',
                      help='transform structure to periodic box')
     cfg = prs.parse_args(sys.argv[1:])
+    # print(cfg)
     generate(cfg)
+
+
+def generate(cfg):
+    """Generate foam morphology."""
+    # Creates terminal for colour output
+    term = Terminal()
+    time_start = datetime.datetime.now()
+    if cfg.pack.active:
+        print(term.yellow + "Packing spheres." + term.normal)
+        packing.pack_spheres(
+            cfg.pack.shape,
+            cfg.pack.scale,
+            cfg.pack.ncells,
+            cfg.pack.alg)
+    if cfg.tess.active:
+        print(term.yellow + "Tessellating." + term.normal)
+        tessellation.tessellate(
+            cfg.filename,
+            cfg.pack.ncells,
+            cfg.tess.render)
+    if cfg.umesh.active:
+        print(term.yellow + "Creating unstructured mesh." + term.normal)
+        unstructured_grid(
+            cfg.filename,
+            cfg.umesh.dwall,
+            cfg.verbose)
+    if cfg.smesh.active:
+        print(term.yellow + "Creating structured mesh." + term.normal)
+        structured_grid(
+            cfg.filename,
+            cfg.smesh.dsize,
+            cfg.smesh.dsize,
+            cfg.smesh.dsize,
+            cfg.smesh.por,
+            cfg.smesh.strut)
+    time_end = datetime.datetime.now()
+    print("Foam created in: {}".format(time_end - time_start))
 
 
 def porOpt(vx):
@@ -139,7 +177,7 @@ def porfsOpt(x):
     )
     filenameIn = filename + "Box.vtk"
     filenameOut = filename + "Box-ascii.vtk"
-    dx = dy = dz = INPUTS["packing_options"]["domain_size"]
+    dx = dy = dz = cfg.smesh.dsize
     origin = [dx, dy, dz]
     spacing = [dx / vx, dy / vy, dz / vz]
     vtkconv.main(filenameIn, filenameOut, origin, spacing)
@@ -187,19 +225,19 @@ def porfsOpt(x):
 
 def periodic_box(filename, render_box):
     """Uses gmsh, vtk, and meshconv to move closed foam to periodic box."""
-    dx = dy = dz = INPUTS["packing_options"]["domain_size"]
+    dx = dy = dz = cfg.smesh.dsize
     # Convert .geo to .stl
     print(
-        TERM.yellow +
+        term.yellow +
         "Convert .geo to .stl" +
-        TERM.normal
+        term.normal
     )
     os.system("gmsh -n -2 -format stl " + filename + ".geo >gmsh.out")
     # Move to periodic box
     print(
-        TERM.yellow +
+        term.yellow +
         "Move to periodic box" +
-        TERM.normal
+        term.normal
     )
     xmin = 0
     ymin = 0
@@ -210,9 +248,9 @@ def periodic_box(filename, render_box):
     )
     # Convert .stl to .ply
     print(
-        TERM.yellow +
+        term.yellow +
         "Convert .stl to .ply" +
-        TERM.normal
+        term.normal
     )
     os.system("meshconv " + filename + "Box.stl -c ply")
 
@@ -225,9 +263,9 @@ def binarize_box(filename, dx, dy, dz, porosity, strut_content):
         # This method is not optimal, since the solver doesn't know that the
         # function takes only integer arguments
         print(
-            TERM.yellow +
+            term.yellow +
             "Optimizing porosity" +
-            TERM.normal
+            term.normal
         )
         res = minimize_scalar(
             porOpt, bracket=[100, 120], method='Brent', tol=1e-2
@@ -235,16 +273,16 @@ def binarize_box(filename, dx, dy, dz, porosity, strut_content):
         vx = vy = vz = int(res.x)
         print('box size: {0:d}'.format(vx))
         print(
-            TERM.yellow +
+            term.yellow +
             "Creating and saving optimal foam" +
-            TERM.normal
+            term.normal
         )
         porOpt(vx)  # Call it with the optimized box size
         # Convert binary .vtk to ascii .vtk
         print(
-            TERM.yellow +
+            term.yellow +
             "Convert binary .vtk to ascii .vtk" +
-            TERM.normal
+            term.normal
         )
         origin = [dx, dy, dz]
         spacing = [dx / vx, dy / vy, dz / vz]
@@ -252,9 +290,9 @@ def binarize_box(filename, dx, dy, dz, porosity, strut_content):
                      "_str.vtk", origin, spacing)
     else:
         print(
-            TERM.yellow +
+            term.yellow +
             "Optimizing porosity and strut content" +
-            TERM.normal
+            term.normal
         )
         res = minimize_scalar(
             porfsOpt, bracket=[150, 200], method='Brent', tol=1e-2
@@ -265,9 +303,9 @@ def binarize_box(filename, dx, dy, dz, porosity, strut_content):
         vx = vy = vz = int(res.x)
         print('optimal box size: {0:d}'.format(vx))
         print(
-            TERM.yellow +
+            term.yellow +
             "Creating and saving optimal foam" +
-            TERM.normal
+            term.normal
         )
         if os.path.isfile(filename + 'Box.vtk'):
             os.remove(filename + 'Box.vtk')
@@ -328,18 +366,18 @@ def structured_grid(filename, dx, dy, dz, porosity, strut_content):
     """Creates foam discretized on structured grid."""
     if INPUTS["structured_grid_options"]["move_to_periodic_box"]:
         print(
-            TERM.yellow +
+            term.yellow +
             "Creating periodic box." +
-            TERM.normal
+            term.normal
         )
         periodic_box(
             INPUTS["filename"],
             INPUTS["structured_grid_options"]["render_box"])
     if INPUTS["structured_grid_options"]["binarize_box"]:
         print(
-            TERM.yellow +
+            term.yellow +
             "Meshing." +
-            TERM.normal
+            term.normal
         )
         binarize_box(filename, dx, dy, dz, porosity, strut_content)
 
@@ -360,57 +398,3 @@ def unstructured_grid(filename, wall_thickness, verbose):
     if INPUTS["unstructured_grid_options"]["convert_mesh"]:
         convert_mesh(filename + "_uns.msh",
                      filename + "_uns.xml")
-
-
-def main():
-    """Main function.
-
-    Executed when running the script from command line.
-    """
-    time_start = datetime.datetime.now()
-    if INPUTS["packing"]:
-        print(
-            TERM.yellow +
-            "Packing spheres." +
-            TERM.normal
-        )
-        packing.pack_spheres(
-            INPUTS["packing_options"]["shape"],
-            INPUTS["packing_options"]["scale"],
-            INPUTS["packing_options"]["number_of_cells"],
-            INPUTS["packing_options"]["algorithm"])
-    if INPUTS["tessellation"]:
-        print(
-            TERM.yellow +
-            "Tessellating." +
-            TERM.normal
-        )
-        tessellation.tessellate(
-            INPUTS["filename"],
-            INPUTS["packing_options"]["number_of_cells"],
-            INPUTS["tessellation_options"]["visualize_tessellation"])
-    if INPUTS["structured_grid"]:
-        print(
-            TERM.yellow +
-            "Creating structured grid." +
-            TERM.normal
-        )
-        structured_grid(
-            INPUTS["filename"],
-            INPUTS["packing_options"]["domain_size"],
-            INPUTS["packing_options"]["domain_size"],
-            INPUTS["packing_options"]["domain_size"],
-            INPUTS["structured_grid_options"]["porosity"],
-            INPUTS["structured_grid_options"]["strut_content"])
-    if INPUTS["unstructured_grid"]:
-        print(
-            TERM.yellow +
-            "Creating unstructured grid." +
-            TERM.normal
-        )
-        unstructured_grid(
-            INPUTS["filename"],
-            INPUTS["unstructured_grid_options"]["wall_thickness"],
-            ARGS['--verbose'])
-    time_end = datetime.datetime.now()
-    print("Foam created in: {}".format(time_end - time_start))
