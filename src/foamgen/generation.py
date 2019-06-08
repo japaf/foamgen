@@ -9,10 +9,9 @@ foam density and struts are optionally added.
 from __future__ import division, print_function
 import sys
 import datetime
-import shutil
 import subprocess as sp
-from blessings import Terminal
 import yamlargparse as yp
+from blessings import Terminal
 from . import packing
 from . import tessellation
 from . import geo_tools
@@ -81,7 +80,6 @@ def parse():
                      action='store_true',
                      help='transform structure to periodic box')
     cfg = prs.parse_args(sys.argv[1:])
-    # print(cfg)
     generate(cfg)
 
 
@@ -103,15 +101,14 @@ def generate(cfg):
                                 cfg.tess.render)
     if cfg.morph.active:
         print(term.yellow + "Creating final morphology." + term.normal)
-        geo_tools.main(cfg.filename,
-                       cfg.morph.dwall,
-                       [cfg.umesh.psize, cfg.umesh.esize, cfg.umesh.csize],
-                       cfg.verbose)
-        shutil.copy(cfg.filename + "WallsBoxFixed.geo",
-                    cfg.filename + "_uns.geo")
+        geo_tools.main(cfg.filename, cfg.morph.dwall, cfg.verbose)
     if cfg.umesh.active:
         print(term.yellow + "Creating unstructured mesh." + term.normal)
-        unstructured_mesh(cfg.filename, cfg.umesh.convert)
+        unstructured_mesh(cfg.filename,
+                          [cfg.umesh.psize,
+                           cfg.umesh.esize,
+                           cfg.umesh.csize],
+                          cfg.umesh.convert)
     if cfg.smesh.active:
         print(term.yellow + "Creating structured mesh." + term.normal)
         smesh.structured_grid(cfg.filename,
@@ -124,8 +121,9 @@ def generate(cfg):
     print("Foam created in: {}".format(time_end - time_start))
 
 
-def unstructured_mesh(filename, convert):
+def unstructured_mesh(filename, sizing, convert):
     """Create unstructured mesh."""
+    geo_tools.prep_mesh_config(filename, sizing)
     mesh_domain(filename + "_uns.geo")
     if convert:
         convert_mesh(filename + "_uns.msh", filename + "_uns.xml")

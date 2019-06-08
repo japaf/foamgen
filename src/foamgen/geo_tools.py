@@ -103,50 +103,18 @@ def fix_strings(strings):
         strings[i] = re.sub('[-]', '', line)
 
 
-def save_geo(geo_file, sdat, edat, opencascade=True, char_length=0.1, psize=0.1,
-             csize=0.1, esize=0.1):
+def save_geo(geo_file, sdat, opencascade=True):
     """
     Creates geometry input file for gmsh. Input is a dictionary with prepared
     string lines.
     """
-    with open(geo_file, "w") as text_file:
+    with open(geo_file, "w") as fhl:
         if opencascade:
-            text_file.write('SetFactory("OpenCASCADE");\n')
-            text_file.write(
-                'Mesh.CharacteristicLengthMax = {0};\n'.format(char_length)
-            )
-            text_file.write('psize = {0};\n'.format(psize))
-            text_file.write('csize = {0};\n'.format(csize))
-            text_file.write('esize = {0};\n'.format(esize))
+            fhl.write('SetFactory("OpenCASCADE");\n')
         for key in NAME_LIST:
             if key in sdat:
                 for line in sdat[key]:
-                    text_file.write("{}\n".format(line))
-        if opencascade:
-            text_file.write(r'p1() = PointsOf {Physical Volume {1};};' + '\n')
-            text_file.write('Field[1] = Distance;\n')
-            text_file.write(r'Field[1].NodesList = {p1()};' + '\n')
-            text_file.write('Field[2] = Threshold;\n')
-            text_file.write('Field[2].IField = 1;\n')
-            text_file.write('Field[2].LcMin = psize;\n')
-            text_file.write('Field[2].LcMax = csize;\n')
-            text_file.write('Field[2].DistMin = 0;\n')
-            text_file.write('Field[2].DistMax = 3*csize;\n')
-            edges = r'{' + ','.join(str(x) for x in edat['line'].keys()) + r'}'
-            text_file.write('Field[3] = Distance;\n')
-            text_file.write('Field[3].NNodesByEdge = 10;\n')
-            text_file.write('Field[3].EdgesList = {};\n'.format(edges))
-            text_file.write('Field[4] = Threshold;\n')
-            text_file.write('Field[4].IField = 2;\n')
-            text_file.write('Field[4].LcMin = psize;\n')
-            text_file.write('Field[4].LcMax = esize;\n')
-            text_file.write('Field[4].DistMin = 0;\n')
-            text_file.write('Field[4].DistMax = 3*esize;\n')
-            text_file.write('Field[5] = Min;\n')
-            text_file.write(r'Field[5].FieldsList = {2, 4};' + '\n')
-            text_file.write('Background Field = 5;\n')
-            text_file.write(
-                'Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
+                    fhl.write("{}\n".format(line))
 
 
 def extract_data(sdat):
@@ -596,7 +564,6 @@ def extract_center_cells(filename, number_of_cells):
     save_geo(
         "{0}.geo".format(filename),
         sdat,
-        edat,
         opencascade=False
     )
 
@@ -607,7 +574,42 @@ def restore_sizing(edat):
         edat['point'][ind] = list(edat['point'][ind]) + ['psize']
 
 
-def main(fname, wall_thickness, sizing, verbose):
+def prep_mesh_config(filename, sizing, char_length=0.1):
+    """Create file specifying mesh parameters."""
+    sdat = read_geo(filename + "WallsBoxFixed.geo")
+    edat = extract_data(sdat)
+    edges = r'{' + ','.join(str(x) for x in edat['line'].keys()) + r'}'
+    with open(filename + '_uns.geo', "w") as fhl:
+        fhl.write('Include "{}WallsBoxFixed.geo";\n'.format(filename))
+        fhl.write('Mesh.CharacteristicLengthMax = {0};\n'.format(char_length))
+        fhl.write('psize = {0};\n'.format(sizing[0]))
+        fhl.write('esize = {0};\n'.format(sizing[1]))
+        fhl.write('csize = {0};\n'.format(sizing[2]))
+        fhl.write(r'p1() = PointsOf {Physical Volume {1};};' + '\n')
+        fhl.write('Field[1] = Distance;\n')
+        fhl.write(r'Field[1].NodesList = {p1()};' + '\n')
+        fhl.write('Field[2] = Threshold;\n')
+        fhl.write('Field[2].IField = 1;\n')
+        fhl.write('Field[2].LcMin = psize;\n')
+        fhl.write('Field[2].LcMax = csize;\n')
+        fhl.write('Field[2].DistMin = 0;\n')
+        fhl.write('Field[2].DistMax = 3*csize;\n')
+        fhl.write('Field[3] = Distance;\n')
+        fhl.write('Field[3].NNodesByEdge = 10;\n')
+        fhl.write('Field[3].EdgesList = {};\n'.format(edges))
+        fhl.write('Field[4] = Threshold;\n')
+        fhl.write('Field[4].IField = 2;\n')
+        fhl.write('Field[4].LcMin = esize;\n')
+        fhl.write('Field[4].LcMax = csize;\n')
+        fhl.write('Field[4].DistMin = 0;\n')
+        fhl.write('Field[4].DistMax = 3*csize;\n')
+        fhl.write('Field[5] = Min;\n')
+        fhl.write(r'Field[5].FieldsList = {2, 4};' + '\n')
+        fhl.write('Background Field = 5;\n')
+        fhl.write('Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
+
+
+def main(fname, wall_thickness, verbose):
     """
     Main subroutine. Organizes workflow.
 
@@ -630,7 +632,7 @@ def main(fname, wall_thickness, sizing, verbose):
     edat = extract_data(sdat)
     create_walls(edat, wall_thickness)
     sdat = collect_strings(edat)
-    save_geo(fname + "Walls.geo", sdat, edat)
+    save_geo(fname + "Walls.geo", sdat)
     # move foam to a periodic box and save it to a file
     move_to_box(
         fname + "Walls.geo", "move_to_box.geo", fname + "WallsBox.geo",
@@ -656,7 +658,6 @@ def main(fname, wall_thickness, sizing, verbose):
         print('other boundary surface IDs: {}'.format(surf))
     # Physical surfaces create problems in mesh conversion step. Bug in gmsh?
     # Boundaries will be defined in fenics/dolfin directly.
-    # TODO: fix this
     # edat['physical_surface'] = {1:surf0, 2:surf1, 3:surf}
     # identification of periodic surfaces for periodic mesh creation
     edat['periodic_surface_X'] = periodic_surfaces(
@@ -673,11 +674,10 @@ def main(fname, wall_thickness, sizing, verbose):
         print(
             'surface IDs periodic in Y: {}'.format(edat['periodic_surface_Y'])
         )
-    restore_sizing(edat)
+    # restore_sizing(edat)
     # save the final foam
     sdat = collect_strings(edat)
-    save_geo(fname + "WallsBoxFixed.geo", sdat,
-             edat, psize=sizing[0], esize=sizing[1], csize=sizing[2])
+    save_geo(fname + "WallsBoxFixed.geo", sdat)
     print(
         term.yellow
         + "Prepared file {}WallsBoxFixed.geo.".format(fname)

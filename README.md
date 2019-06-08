@@ -29,6 +29,8 @@ Install using pip:
 pip install .
 ```
 
+Structured meshing is currently broken. Use only unstructured meshing workflow.
+
 ## Inputs
 
 The code is controlled by the `input.json` file, which must be located in the
