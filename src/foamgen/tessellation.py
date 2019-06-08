@@ -13,7 +13,7 @@ Uses Neper 3.
 import os
 import math
 import numpy as np
-from geo_tools import read_geo, extract_data
+from .geo_tools import read_geo, extract_data
 # current directory
 MYPATH = os.getcwd()
 

@@ -1,38 +1,89 @@
 #!/usr/bin/env python
 """Python script, which organizes creation of the foam.
 
-@file       run.py @namespace  FoamConstruction.run @ingroup
-mod_foamConstruction @author     Pavel Ferkl @copyright  2014-2016, MoDeNa
-Project. GNU Public License. @details
+First, the geometric tessellation is performed so that the resulting foam has
+the correct bubble size distribution. Then several mesh conversions are made to
+obtain the foam image in desired format. Finally, foam is voxelized to desired
+foam density and struts are optionally added.
 
-First, the geometric tessellation is performed so that the resulting foam has the
-correct bubble size distribution. Then several mesh conversions are made to obtain
-the foam image in desired format. Finally, foam is voxelized to desired foam
-density and struts are optionally added.
-
-Usage: simulation.py [-h | --help] [-i input_file] [--verbose]
-
-Options:
-    -h --help       Show this screen.
-    -i input_file   Json file with inputs. Uses default file otherwise.
-    --verbose       Print more information.
 """
 from __future__ import division, print_function
 import os
-import json
+import sys
 import datetime
 import shutil
 import subprocess as sp
 from blessings import Terminal
-from docopt import docopt
+import yamlargparse as yp
 from scipy.optimize import minimize_scalar
-import packing
-import tessellation
-import periodicBox
-import vtkconv
-import geo_tools
+from . import packing
+from . import tessellation
+from . import periodicBox
+from . import vtkconv
+from . import geo_tools
 # Creates terminal for colour output
 TERM = Terminal()
+
+
+def parse():
+    """Parse arguments using yamlargparse and call generate function."""
+    prs = yp.ArgumentParser(
+        prog='foamgen',
+        error_handler=yp.usage_and_exit_error_handler,
+        description='Generate foam morphology.')
+    prs.add_argument('-c', '--config', action=yp.ActionConfigFile,
+                     help='name of config file')
+    prs.add_argument('-f', '--filename', default='Foam',
+                     help='base filename')
+    prs.add_argument('-p', '--pack.active', default=False,
+                     action='store_true', help='create sphere packing')
+    prs.add_argument('--pack.dsize', default=1,
+                     help='domain size')
+    prs.add_argument('--pack.ncells', default=27,
+                     help='number of cells')
+    prs.add_argument('--pack.shape', default=0.2,
+                     help='sphere size distribution shape factor')
+    prs.add_argument('--pack.scale', default=0.2,
+                     help='sphere size distribution scale factor')
+    prs.add_argument('--pack.alg', default='fba',
+                     help='packing algorithm')
+    prs.add_argument('-t', '--tess.active', default=False,
+                     action='store_true', help='create tessellation')
+    prs.add_argument('--tess.render', default=False,
+                     action='store_true', help='visualize tessellation')
+    prs.add_argument('-u', '--umesh.active', default=False,
+                     action='store_true', help='create unstructured mesh')
+    prs.add_argument('--umesh.geom', default=True,
+                     action='store_true', help='create geometry')
+    prs.add_argument('--umesh.dwall', default=0.02,
+                     help='wall thickness')
+    prs.add_argument('--umesh.mesh', default=True,
+                     action='store_true', help='perform meshing')
+    prs.add_argument('--umesh.psize', default=0.025,
+                     help='mesh size near geometry points')
+    prs.add_argument('--umesh.esize', default=0.1,
+                     help='mesh size near geometry edges')
+    prs.add_argument('--umesh.csize', default=0.1,
+                     help='mesh size in middle of geometry cells')
+    prs.add_argument('--umesh.convert', default=0.1,
+                     help='convert mesh to *.xml for fenics')
+    prs.add_argument('-s', '--smesh.active', default=False,
+                     action='store_true', help='create structured mesh')
+    prs.add_argument('--smesh.render', default=False,
+                     action='store_true', help='visualize structured mesh')
+    prs.add_argument('--smesh.strut', default=0.6,
+                     help='strut content')
+    prs.add_argument('--smesh.por', default=0.94,
+                     help='porosity')
+    prs.add_argument('--smesh.isstrut', default=4,
+                     help='initial guess of strut size parameter')
+    prs.add_argument('--smesh.binarize', default=True,
+                     action='store_true', help='binarize structure')
+    prs.add_argument('--smesh.perbox', default=True,
+                     action='store_true',
+                     help='transform structure to periodic box')
+    cfg = prs.parse_args(sys.argv[1:])
+    generate(cfg)
 
 
 def porOpt(vx):
@@ -363,15 +414,3 @@ def main():
             ARGS['--verbose'])
     time_end = datetime.datetime.now()
     print("Foam created in: {}".format(time_end - time_start))
-
-
-if __name__ == "__main__":
-    ARGS = docopt(__doc__)
-    if ARGS['-i']:
-        INPUT_FILE = ARGS['-i']
-    else:
-        INPUT_FILE = 'input.json'
-    with open(INPUT_FILE, 'r') as ifl:
-        INPUTS = json.load(ifl)
-        DEDGE = INPUTS["structured_grid_options"]["strut_size_guess"]
-    main()

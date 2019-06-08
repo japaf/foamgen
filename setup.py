@@ -109,6 +109,7 @@ setup(
     version="0.1.0",
     author="Pavel Ferkl",
     author_email="pavel.ferkl@gmail.com",
+    keywords='foam generation reconstruction morphology',
     description="Generate virtual closed-cell or open-cell foam structure.",
     long_description=long_desc(),
     long_description_content_type="text/markdown",
@@ -118,8 +119,13 @@ setup(
     ext_modules=[CMakeExtension('foamgen/foamgen')],
     cmdclass=dict(build_ext=CMakeBuild),
     scripts=[os.path.join('scripts', 'foamreconstr')],
-    install_requires=['numpy', 'scipy', 'matplotlib', 'vapory',
-                      'blessings', 'spack', 'vtk', 'docopt', 'gmsh-sdk'],
+    entry_points={
+        'console_scripts': [
+            'foamgen=foamgen.run:parse',
+        ],
+    },
+    install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',
+                      'blessings', 'spack', 'vtk', 'gmsh-sdk'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",

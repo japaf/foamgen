@@ -1,6 +1,6 @@
-# Foamgen
+# Foamgen: create foam morphology
 
-Foamgen can create spatially three-dimensional images of foam morphology with desired foam density, cell size distribution and strut content. Can be used to create both closed-cell and open-cell foams. Capable of generation of both structured (uniform grid) and unstructured meshes.
+Foamgen can create spatially three-dimensional virtual representations of foam morphology with desired foam density, cell size distribution and strut content. Can be used to create both closed-cell and open-cell foams. Capable of generation of both structured (uniform grid) and unstructured meshes.
 
 ## Installation
 
