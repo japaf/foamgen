@@ -29,20 +29,6 @@ Install using pip:
 pip install .
 ```
 
-## Files
-
-The folder `FoamConstruction` contains following files:
-
-- `packing.py` - sphere packing
-- `tessellation.py` - tessellation, creation of RVE
-- `periodicBox.py` - creation of the box with periodic boundary conditions
-- `vtkconv.py` - conversion from binary vtk to ascii vtk
-- `geo_tools.py` - manipulation of GMSH geometry files, creation of unstructured mesh
-- `run.py` - main executable script
-- `simulation.py` - experimental script for FEM simulations using FEniCS (conductivity or diffusivity)
-
-All files must be in one directory.
-
 ## Inputs
 
 The code is controlled by the `input.json` file, which must be located in the

@@ -121,7 +121,7 @@ setup(
     scripts=[os.path.join('scripts', 'foamreconstr')],
     entry_points={
         'console_scripts': [
-            'foamgen=foamgen.run:parse',
+            'foamgen=foamgen.generation:parse',
         ],
     },
     install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',

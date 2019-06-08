@@ -174,7 +174,7 @@ def pack_spheres(shape, scale, number_of_cells, algorithm):
     else:
         create_input(number_of_cells)
         make_csd(shape, scale, number_of_cells)
-        generate_structure(algorithm)
+        generate_structure('-' + algorithm)
         data = read_results()
     np.savetxt('Project01.rco', data)
     render_packing(data)
