@@ -15,7 +15,7 @@ Make sure you have the following dependencies installed:
 - [binvox](http://www.patrickmin.com/binvox/)
 - [GSL](http://www.gnu.org/software/gsl/)
 
-On Ubuntu, all of these can be installed using:
+On Ubuntu, all of these can be installed as
 
 ```bash
 sudo ./install_dependencies.sh
@@ -23,13 +23,43 @@ sudo ./install_dependencies.sh
 
 ### Module
 
-Install using pip:
+Install using `pip` as
 
 ```bash
 pip install .
 ```
 
-Structured meshing is currently broken. Use only unstructured meshing workflow.
+## Usage
+
+The value of each parameter of the foam generation process is determined in the following way:
+
+- The tool looks if the the value of the parameter was specified through CLI.
+- If the parameter is not specified, but [YAML](https://yaml.org/) config file is specified, it looks for it there.
+- If not found, it takes the hard-coded default value of the parameter.
+
+The config file can be specified as
+
+```bash
+foamgen -c config_file.yaml
+```
+
+All parameters and their default values can be viewed using
+
+```bash
+foamgen -h
+```
+
+The unstructured mesh workflow with default parameters can be run as
+
+```bash
+foamgen -ptmu
+```
+
+The structured mesh workflow with default parameters can be run as (**Note: Structured meshing is currently broken. Use only unstructured meshing workflow.**)
+
+```bash
+foamgen -pts
+```
 
 ## Inputs
 
