@@ -1,4 +1,8 @@
 #!/bin/bash
+apts () {
+    sudo apt-get install cmake
+}
+
 packinggeneration () {
     cd /tmp
     git clone https://github.com/VasiliBaranov/packing-generation.git
@@ -57,6 +61,7 @@ gsl () {
     sudo apt-get install libgsl-dev
 }
 
+apts |& tee apts.log
 packinggeneration |& tee packinggeneration.log
 neper |& tee neper.log
 voroplusplus |& tee voroplusplus.log

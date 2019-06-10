@@ -1,4 +1,4 @@
-# Foamgen: create foam morphology
+# Foamgen: generate foam morphology
 
 Foamgen can create spatially three-dimensional virtual representations of foam morphology with desired foam density, cell size distribution and strut content. Can be used to create both closed-cell and open-cell foams. Capable of generation of both structured (uniform grid) and unstructured meshes.
 
@@ -40,7 +40,7 @@ The value of each parameter of the foam generation process is determined in the 
 The config file can be specified as
 
 ```bash
-foamgen -c config_file.yaml
+foamgen -c config_file.yml
 ```
 
 All parameters and their default values can be viewed using
@@ -92,19 +92,6 @@ in `example_inputs` directory. Following inputs can be adjusted:
     - `convert_mesh`: run part of the script, which converts mesh to .xml, [true, false], true is recommended,
     - `wall_thickness`: wall thickness parameter, 0.02 is good guess
     - `mesh_domain`: run part of the script, which creates mesh, [true, false], true is recommended
-
-## Execution
-
-Prepare `input.json`, then:
-
-```bash
-./run.py
-```
-
-Optimizing porosity and strut content of voxelized foam is relatively time
-consuming. You can switch to `Bounded` method if you approximately know the
-size of the box in voxels (usually from experience with the program). In that
-case you need to edit the `run.py` script.
 
 ## Outputs
 
