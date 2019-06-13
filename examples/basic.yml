@@ -1,0 +1,28 @@
+filename: Foam
+pack:
+    active: no
+    ncells: 8
+    shape: 0.195909940771
+    scale: 0.216136876376
+    alg: fba
+tess:
+    active: no
+    render: no
+morph:
+    active: no
+    dwall: 0.02
+umesh:
+    active: no
+    psize: 0.025
+    esize: 0.01
+    csize: 0.1
+    convert: yes
+smesh:
+    active: no
+    render: no
+    dsize: 1
+    strut: 0.5
+    por: 0.95
+    isstrut: 4
+    binarize: yes
+    perbox: yes
