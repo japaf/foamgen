@@ -101,7 +101,7 @@ Contraction rate: 1.328910e-005
         fout.write(txt)
 
 
-def make_csd(shape, scale, npart, show_plot=False):
+def make_csd(fname, shape, scale, npart, show_plot=False):
     """Create cell size distribution and save it to file."""
     if shape == 0:
         rads = [scale + 0 * x for x in range(npart)]
@@ -115,10 +115,16 @@ def make_csd(shape, scale, npart, show_plot=False):
     else:
         xpos = linspace(lognorm.ppf(0.01, shape, scale=scale),
                         lognorm.ppf(0.99, shape, scale=scale), 100)
-    plt.plot(xpos, lognorm.pdf(xpos, shape, scale=scale))
-    plt.hist(rads, normed=True)
-    plt.savefig('packing_histogram.png')
-    plt.savefig('packing_histogram.pdf')
+    plt.figure(figsize=(12, 8))
+    plt.rcParams.update({'font.size': 16})
+    plt.plot(xpos, lognorm.pdf(xpos, shape, scale=scale), lw=3, label='input')
+    plt.hist(rads, density=True, label='spheres')
+    plt.grid()
+    plt.xlabel('Size')
+    plt.ylabel('Probability density function')
+    plt.legend()
+    plt.savefig(fname + 'Packing_histogram.png', dpi=300)
+    plt.savefig(fname + 'Packing_histogram.pdf')
     if show_plot:
         plt.show()
 
@@ -141,7 +147,7 @@ def read_results():
     return data
 
 
-def render_packing(data, domain=1.0, pixels=1000):
+def render_packing(fname, data, domain=1.0, pixels=1000):
     """Save picture of packed domain. Uses spack.
     https://pyspack.readthedocs.io/en/latest/"""
     pack = spack.Packing(data[:, 0:3], data[:, 3], L=domain)
@@ -149,32 +155,58 @@ def render_packing(data, domain=1.0, pixels=1000):
     scene = pack.scene(rot=pi / 4, camera_height=0.5,
                        camera_dist=2.5e1, angle=4, cmap='autumn',
                        floater_color=None)
-    scene.render('packing.png', width=pixels,
+    scene.render(fname + 'Packing.png', width=pixels,
                  height=pixels, antialiasing=0.0001)
 
 
-def generate_structure(flag):
+def generate_structure(flag, maxit):
     """Runs the packing algorithm."""
     if os.path.isfile("packing.nfo"):
-        os.remove(os.path.abspath("packing.nfo"))
-    proc = subprocess.Popen(['PackingGeneration.exe', flag])
-    proc.wait()
-    if not os.path.isfile("packing.nfo"):
-        print('Try to change number of particles or size distribution.')
-        raise Exception('Packing algorithm failed.')
+        os.remove("packing.nfo")
+    subprocess.Popen(['PackingGeneration.exe', flag]).wait()
 
 
-def pack_spheres(shape, scale, number_of_cells, algorithm):
-    """Packs spheres into a periodic domain. Creates Project01.rco with sphere
-    centers and radii. Simple model is implemented directly, other algorithms
-    use Vasili Baranov's code:
-    https://github.com/VasiliBaranov/packing-generation."""
+def clean_packing():
+    """Delete unnecessary files."""
+    flist = [
+        'contraction_energies.txt',
+        'diameters.txt',
+        'generation.conf',
+        'packing_init.xyzd',
+        'packing.nfo',
+        'packing_prev.xyzd',
+        'packing.xyzd',
+    ]
+    for fil in flist:
+        if os.path.exists(fil):
+            os.remove(fil)
+
+
+def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
+                 render, clean):
+    """
+    Packs spheres into a periodic domain. Creates file ending Packing.rco with
+    sphere centers and radii. Simple model is implemented directly, other
+    algorithms use Vasili Baranov's code:
+    https://github.com/VasiliBaranov/packing-generation.
+    """
     if algorithm == 'simple':
         data = simple_packing(shape, scale, number_of_cells)
     else:
         create_input(number_of_cells)
-        make_csd(shape, scale, number_of_cells)
-        generate_structure('-' + algorithm)
+        for i in range(maxit):
+            print('Iteration: {}'.format(i + 1))
+            make_csd(fname, shape, scale, number_of_cells)
+            generate_structure('-' + algorithm, maxit)
+            if os.path.isfile("packing.nfo"):
+                break
+        if not os.path.isfile("packing.nfo"):
+            raise Exception(
+                'Packing algorithm failed. ' +
+                'Try to change number of particles or size distribution.')
         data = read_results()
-    np.savetxt('Project01.rco', data)
-    render_packing(data)
+    np.savetxt(fname + 'Packing.rco', data)
+    if render:
+        render_packing(fname, data)
+    if clean:
+        clean_packing()

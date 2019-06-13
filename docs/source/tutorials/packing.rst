@@ -1,4 +1,59 @@
-Dense sphere packing
+Sphere packing
 ====================
 
-TODO
+The goal of sphere packing is to initialize the tessellation. Packing is
+performed in spatially three-dimensional periodic domain. Sphere centers are
+used as cell seeds and sphere diameters are used as cell weights.
+
+**Packing determines the number of cells and their size distribution in the
+generated foam.**
+
+Execution
+---------
+
+Default packing can be achieved by running::
+
+    foamgen -p
+
+This produces packing similar to this one (you need to add ``--pack.render``
+flag if you want to create the image):
+
+.. image:: ../_images/FoamPacking.png
+    :width: 50%
+
+
+Size distribution
+-----------------
+
+Note that sphere size distribution does not exactly copy prescribed continual
+size distribution (especially for low number of spheres - see below).
+
+.. image:: ../_images/FoamPacking_histogram.png
+
+Log-normal sphere size distribution is influenced by shape (``--pack.shape``)
+and scale (``--pack.shape``). It is defined as
+
+.. math::
+
+    p = \frac{1}{\delta \sigma \sqrt{2 \pi}} \exp \left( - \frac{\left(
+    \log{(\delta)} - \mu \right)^2}{2 \sigma^2} \right)
+
+where :math:`\delta` is sphere size, :math:`\sigma` is standard deviation, and
+:math:`\mu` is mean. Shape is identical to standard deviation. Scale,
+:math:`\phi`, is defined as
+
+.. math::
+
+    \phi = \exp(\mu)
+
+Shape equal to zero corresponds to uniform size distribution. Shape larger than
+0.5 corresponds to wide size distribution.
+
+Algorithms
+----------
+
+It is possible choose between several sphere packing algorithms using
+``--pack.alg`` flag. ``simple`` is very simple algorithm that is implemented
+directly. ``ls``, ``fba``, ``lsgd``, ``lsebc``, ``ojt``, ``kjt`` are algorithms
+from `packing-generation <https://github.com/VasiliBaranov/packing-generation>`_
+software. ``fba`` provides good compromise between speed and packing density.
