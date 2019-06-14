@@ -1,5 +1,5 @@
 Sphere packing
-====================
+==============
 
 The goal of sphere packing is to initialize the tessellation. Packing is
 performed in spatially three-dimensional periodic domain. Sphere centers are
@@ -53,7 +53,8 @@ Algorithms
 ----------
 
 It is possible choose between several sphere packing algorithms using
-``--pack.alg`` flag. ``simple`` is very simple algorithm that is implemented
-directly. ``ls``, ``fba``, ``lsgd``, ``lsebc``, ``ojt``, ``kjt`` are algorithms
-from `packing-generation <https://github.com/VasiliBaranov/packing-generation>`_
-software. ``fba`` provides good compromise between speed and packing density.
+``--pack.alg`` flag. ``simple`` is a naive packing algorithm that is
+implemented directly. ``ls``, ``fba``, ``lsgd``, ``lsebc``, ``ojt``, ``kjt``
+are more robust algorithms from `packing-generation
+<https://github.com/VasiliBaranov/packing-generation>`_ library. ``fba``
+provides good compromise between speed and packing density.
