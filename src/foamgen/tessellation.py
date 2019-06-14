@@ -7,68 +7,92 @@
 @author     Pavel Ferkl
 @copyright  2014-2016, MoDeNa Project. GNU Public License.
 @details
-Prepares representative volume element (RVE) of foam using Laguerre tessellation.
+Prepares representative volume element (RVE) of foam using Laguerre
+tessellation.
 Uses Neper 3.
 """
 import os
-import math
-import numpy as np
+import subprocess as sp
+import shlex as sx
+import pandas as pd
 from .geo_tools import read_geo, extract_data
-# current directory
-MYPATH = os.getcwd()
 
 
-def tessellate(filename, number_of_cells, visualize_tessellation):
-    """Use Laguerre tessellation from Neper to create dry foam. Uses Project01.rco
-    as input file."""
-    myfile12 = os.path.join(MYPATH, 'Project01.rco')
-    centers_rads = np.loadtxt(myfile12, usecols=(0, 1, 2, 3))
-    centers_rads[:, 3] = centers_rads[:, 3] / 2.0
-    centers = centers_rads[:, :3]  # All centers of spheres
-    rads = centers_rads[:, 3]  # All radii of spheres
-    max_centers = max(centers.tolist())
-    min_centers = min(centers.tolist())
-    edge_cube_size = [math.ceil(max_centers[0] - min_centers[0]),
-                      math.ceil(max_centers[1] - min_centers[1]),
-                      math.ceil(max_centers[2] - min_centers[2])]
-    edge_rve_size = int(max(edge_cube_size))  # For NEPER: Size of edge of RVE
-    # create periodic RVE directly using Neper's new periodicity option
-    myfile3 = os.path.join(MYPATH, 'centers.txt')
-    with open(myfile3, 'w') as fout:
-        for i in range(0, 1):
-            for j in range(0, number_of_cells):
-                fout.write('{0:f}\t{1:f}\t{2:f}\n'.format(centers[j][i],
-                                                          centers[j][i + 1],
-                                                          centers[j][i + 2]))
-    myfile4 = os.path.join(MYPATH, 'Rads.txt')
-    with open(myfile4, 'w') as fout:
-        for i in range(0, 1):
-            for j in range(0, number_of_cells):
-                fout.write('{0:f}\n'.format(rads[j]))
-    # Note: Neper regularization is not available for periodic tessellations
-    command_tessellation = "neper -T \
+def tessellate(fname, number_of_cells, visualize, gnuplot=True):
+    """
+    Use Laguerre tessellation from Neper to create dry foam. Uses Project01.rco
+    as input file.
+    """
+    prep(fname)
+    neper_tessellation(fname, number_of_cells)
+    if visualize:
+        neper_visualize(fname)
+    if gnuplot:
+        save_gnuplot(fname)
+    clean()
+
+
+def prep(fname):
+    """Prepare input files for Neper."""
+    dtf = pd.read_csv(fname + 'Packing.rco', sep=r'\s+',
+                      names=('x', 'y', 'z', 'r'))
+    dtf['r'] /= 2
+    dtf[['x', 'y', 'z']].to_csv('centers.txt', sep='\t', header=None,
+                                index=None)
+    dtf[['r']].to_csv('rads.txt', sep='\t', header=None, index=None)
+
+
+def neper_tessellation(fname, number_of_cells, rve_size=1):
+    """
+    Use Neper to perform tessellation. Note: Neper regularization is not
+    available for periodic tessellations.
+    """
+    command = "neper -T \
         -n {0:d} \
-        -domain 'cube({1:d},{2:d},{3:d})' \
+        -domain 'cube({1:d},{1:d},{1:d})' \
         -periodicity x,y,z \
         -morpho voronoi \
-        -morphooptiini 'coo:file(centers.txt),weight:file(Rads.txt)' \
-        -o {4} -format tess,geo \
+        -morphooptiini 'coo:file(centers.txt),weight:file(rads.txt)' \
+        -o {2}Tessellation -format tess,geo \
         -statcell vol -statedge length -statface area \
-        -statver x".format(number_of_cells, edge_rve_size, edge_rve_size,
-                           edge_rve_size, filename)
-    os.system(command_tessellation)
-    if visualize_tessellation:  # needs POV-Ray
-        command_visualization = "neper -V {0}RVE27.tess -datacellcol ori \
-            -datacelltrs 0.5 -showseed all -dataseedrad @Rads.txt \
-            -dataseedtrs 1.0 -print {0}RVE27".format(filename)
-        os.system(command_visualization)
-    sdat = read_geo(filename + ".geo")
+        -statver x".format(number_of_cells, rve_size, fname)
+    print(command)
+    sp.Popen(sx.split(command)).wait()
+
+
+def neper_visualize(fname):
+    """Use neper to visualize tessellation. Requires Pov-Ray package."""
+    command = "neper -V {0}Tessellation.tess -datacellcol ori \
+        -datacelltrs 0.5 -showseed all -dataseedrad @rads.txt \
+        -dataseedtrs 1.0 -print {0}Tessellation".format(fname)
+    sp.Popen(sx.split(command))
+
+
+def save_gnuplot(fname):
+    """Save tessellation in gnuplot format."""
+    sdat = read_geo(fname + "Tessellation.geo")
     edat = extract_data(sdat)
     point = edat["point"]
     line = edat["line"]
-    with open('{0}.gnu'.format(filename), 'w') as flp:
+    with open('{0}Tessellation.gnu'.format(fname), 'w') as flp:
         for pidx in line.values():
             flp.write('{0} {1} {2}\n'.format(
                 point[pidx[0]][0], point[pidx[0]][1], point[pidx[0]][2]))
             flp.write('{0} {1} {2}\n\n\n'.format(
                 point[pidx[1]][0], point[pidx[1]][1], point[pidx[1]][2]))
+
+
+def clean():
+    """Delete unnecessary files."""
+    flist = [
+        'centers.txt',
+        'rads.txt',
+        'generation.conf',
+        'packing_init.xyzd',
+        'packing.nfo',
+        'packing_prev.xyzd',
+        'packing.xyzd',
+    ]
+    for fil in flist:
+        if os.path.exists(fil):
+            os.remove(fil)

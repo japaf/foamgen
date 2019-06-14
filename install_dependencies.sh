@@ -14,7 +14,8 @@ packinggeneration () {
 }
 
 neper () {
-    sudo apt-get install libgsl-dev libscotch-dev povray libnlopt-dev
+    sudo apt-get install libgsl-dev libscotch-dev povray povray-includes \
+    libnlopt-dev
     NEPER_VERSION=3.4.0
     echo "Installing NEPER version $NEPER_VERSION"
     cd /tmp
