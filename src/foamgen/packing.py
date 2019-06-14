@@ -16,73 +16,61 @@ import time
 import random
 import subprocess
 import numpy as np
-from numpy import pi, linspace, reshape
+import pandas as pd
 from scipy.stats import lognorm
 import matplotlib.pyplot as plt
 import spack
 
 
 def simple_packing(shape, scale, number_of_cells):
-    "Simple and fast algorithm for packing"
-    Rad = lognorm.rvs(shape, scale=scale, size=number_of_cells)
-    print(Rad)
-    Rad /= 2
-    Rads1 = list(range(number_of_cells))
-    t = 0
-    for i in range(number_of_cells):
-        c = abs(Rad[t])
-        Rads1[t] = c.astype(np.float)
-        t = t + 1
-    Rads1 = sorted(Rads1)
-    v = 0.00
-    for i in range(number_of_cells):
-        v = v + ((2.00 * Rads1[i])**3.00)
-    centers = [[0 for i in range(3)] for j in range(number_of_cells)]
-    v = v * 1.40
-    lc = v**(1.00 / 3.00)
-    K = 0
-    while K == 0:
+    """
+    Simple and fast algorithm for packing. Can lead to overlapping spheres.
+    Cell size distribution is often not satisfied.
+    """
+    rads = make_csd(shape, scale, number_of_cells) / 2
+    rads.sort()
+    vol = sum((2 * rads)**3)
+    vol = vol * 1.40
+    lch = vol**(1.00 / 3.00)
+    centers = np.zeros((number_of_cells, 3))
+    finished = False
+    while not finished:
         j = -1
-        h = 0
         timeout = time.time() + 10
-        while number_of_cells >= j and h == 0:
+        while number_of_cells >= j:
             if time.time() > timeout:
-                h = 1
-                break
+                raise Exception('Timed out!')
             j = j + 1
             if j == number_of_cells:
-                K = 1
+                finished = True
                 break
-            PickCenterX, PickCenterY, PickCenterZ =\
-                lc * random.random(),\
-                lc * random.random(),\
-                lc * random.random()
-            while (lc - Rads1[j] >= PickCenterX
-                    and lc - Rads1[j] >= PickCenterY
-                    and lc - Rads1[j] >= PickCenterZ and Rads1[j] < PickCenterX
-                    and Rads1[j] < PickCenterY and Rads1[j] < PickCenterZ):
-                PickCenterX, PickCenterY, PickCenterZ =\
-                    lc * random.random(),\
-                    lc * random.random(),\
-                    lc * random.random()
-            centers[j][0], centers[j][1], centers[j][2] =\
-                PickCenterX, PickCenterY, PickCenterZ
-            KeepCentreX, KeepCentreY, KeepCentreZ, KeepR =\
-                PickCenterX, PickCenterY, PickCenterZ, Rads1[j]
+            # pick new coordinates
+            pick_x = lch * random.random()
+            pick_y = lch * random.random()
+            pick_z = lch * random.random()
+            while (lch - rads[j] >= pick_x
+                   and lch - rads[j] >= pick_y
+                   and lch - rads[j] >= pick_z and rads[j] < pick_x
+                   and rads[j] < pick_y and rads[j] < pick_z):
+                pick_x = lch * random.random()
+                pick_y = lch * random.random()
+                pick_z = lch * random.random()
+            centers[j][0] = pick_x
+            centers[j][1] = pick_y
+            centers[j][2] = pick_z
+            # new sphere must not overlap with already existing sphere
             if j > 0:
-                for t in range(0, j):
-                    if ((((((KeepCentreX - centers[t][0])**2.00) +
-                            ((KeepCentreY - centers[t][1])**2.00) +
-                            ((KeepCentreZ - centers[t][2])**2.00))**0.50) -
-                            (KeepR + Rads1[t])) < 0.000) and t != j:
+                for i in range(0, j):
+                    if ((((((pick_x - centers[i][0])**2) +
+                           ((pick_y - centers[i][1])**2) +
+                           ((pick_z - centers[i][2])**2))**0.5) -
+                         (rads[j] + rads[i])) < 0) and i != j:
                         centers[j][0], centers[j][0], centers[j][0] = 0, 0, 0
                         j = j - 1
                         break
-    data = zip(*centers)
-    data.append(Rads1)
-    data = np.array(zip(*data))
-    data[:, 3] = 2 * data[:, 3]
-    return data
+    dtf = pd.DataFrame(centers, columns=('x', 'y', 'z'))
+    dtf['d'] = 2 * rads
+    return dtf.values, rads
 
 
 def create_input(npart, domain=1.0):
@@ -94,14 +82,12 @@ Seed: 341
 Steps to write: 1000
 Boundaries mode: 1
 Contraction rate: 1.328910e-005
-1. boundaries mode: 1 - bulk; 2 - ellipse (inscribed in XYZ box, Z is length of an ellipse); 3 - rectangle
-2. generationMode = 1 (Poisson, R) or 2 (Poisson in cells, S)
     """.format(npart, domain)
     with open('generation.conf', 'w') as fout:
         fout.write(txt)
 
 
-def make_csd(fname, shape, scale, npart, show_plot=False):
+def make_csd(shape, scale, npart):
     """Create cell size distribution and save it to file."""
     if shape == 0:
         rads = [scale + 0 * x for x in range(npart)]
@@ -110,11 +96,16 @@ def make_csd(fname, shape, scale, npart, show_plot=False):
     with open('diameters.txt', 'w') as fout:
         for rad in rads:
             fout.write('{0}\n'.format(rad))
+    return rads
+
+
+def save_csd(fname, rads, shape, scale, show_plot=False):
+    """Save cell size distribution plot."""
     if shape == 0:
-        xpos = linspace(scale / 2, scale * 2, 100)
+        xpos = np.linspace(scale / 2, scale * 2, 100)
     else:
-        xpos = linspace(lognorm.ppf(0.01, shape, scale=scale),
-                        lognorm.ppf(0.99, shape, scale=scale), 100)
+        xpos = np.linspace(lognorm.ppf(0.01, shape, scale=scale),
+                           lognorm.ppf(0.99, shape, scale=scale), 100)
     plt.figure(figsize=(12, 8))
     plt.rcParams.update({'font.size': 16})
     plt.plot(xpos, lognorm.pdf(xpos, shape, scale=scale), lw=3, label='input')
@@ -141,7 +132,7 @@ def read_results():
     with open("packing.xyzd", "rb") as fin:
         btxt = fin.read()
         txt = list(struct.unpack("<" + "d" * (len(btxt) // 8), btxt))
-        data = reshape(txt, (-1, 4))
+        data = np.reshape(txt, (-1, 4))
     data[:, 3] = data[:, 3] * \
         ((1 - por_final) / (1 - por_theory))**(1 / 3)
     return data
@@ -152,7 +143,7 @@ def render_packing(fname, data, domain=1.0, pixels=1000):
     https://pyspack.readthedocs.io/en/latest/"""
     pack = spack.Packing(data[:, 0:3], data[:, 3], L=domain)
     print(pack.contacts())
-    scene = pack.scene(rot=pi / 4, camera_height=0.5,
+    scene = pack.scene(rot=np.pi / 4, camera_height=0.5,
                        camera_dist=2.5e1, angle=4, cmap='autumn',
                        floater_color=None)
     scene.render(fname + 'Packing.png', width=pixels,
@@ -191,12 +182,12 @@ def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
     https://github.com/VasiliBaranov/packing-generation.
     """
     if algorithm == 'simple':
-        data = simple_packing(shape, scale, number_of_cells)
+        data, rads = simple_packing(shape, scale, number_of_cells)
     else:
         create_input(number_of_cells)
         for i in range(maxit):
             print('Iteration: {}'.format(i + 1))
-            make_csd(fname, shape, scale, number_of_cells)
+            rads = make_csd(shape, scale, number_of_cells)
             generate_structure('-' + algorithm, maxit)
             if os.path.isfile("packing.nfo"):
                 break
@@ -205,6 +196,7 @@ def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
                 'Packing algorithm failed. ' +
                 'Try to change number of particles or size distribution.')
         data = read_results()
+    save_csd(fname, rads, shape, scale)
     np.savetxt(fname + 'Packing.rco', data)
     if render:
         render_packing(fname, data)
