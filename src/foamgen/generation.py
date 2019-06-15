@@ -66,11 +66,11 @@ def parse():
                      help='mesh size near geometry edges')
     prs.add_argument('--umesh.csize', default=0.1, type=float,
                      help='mesh size in middle of geometry cells')
-    prs.add_argument('--umesh.convert', default=0.1, type=float,
+    prs.add_argument('--umesh.convert', default=True, action='store_true',
                      help='convert mesh to *.xml for fenics')
     prs.add_argument('-s', '--smesh.active', default=False,
                      action='store_true', help='create structured mesh')
-    prs.add_argument('--pack.dsize', default=1, type=float,
+    prs.add_argument('--smesh.dsize', default=1, type=float,
                      help='domain size')
     prs.add_argument('--smesh.render', default=False,
                      action='store_true', help='visualize structured mesh')

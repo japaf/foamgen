@@ -4,7 +4,7 @@ Installation
 Requirements
 ------------
 
-Foamgen requires following softwares and libraries:
+Foamgen requires following programs and libraries:
 
 * `CMake <http://www.cmake.org>`_ version 2.8.12 or above
 * `Python <http://www.python.org/>`_ version 3.5 or above
@@ -23,11 +23,14 @@ Foamgen requires following softwares and libraries:
 
 You must ensure that these are installed prior to module installation.
 
-On Ubuntu 18.04, all of these can be installed using
-`install_dependencies.sh <https://github.com/japaf/foamgen/blob/master/install_dependencies.sh>`_
+On Ubuntu 18.04, all of these can be installed using `install_dependencies.sh
+<https://github.com/japaf/foamgen/blob/master/install_dependencies.sh>`_
 script::
 
     sudo ./install_dependencies.sh
+
+Moreover, `fenics <https://fenicsproject.org/>`_ (or at least
+``dolfin-convert``) is necessary for mesh conversion.
 
 Other operating systems and Linux distributions are not tested.
 
