@@ -8,6 +8,13 @@ used as cell seeds and sphere diameters are used as cell weights.
 **Packing determines the number of cells and their size distribution in the
 generated foam.**
 
+Inputs
+------
+
+Number of cells and shape and scale parameters of log-normal size distribution
+should be provided either through CLI or configurational file (otherwise
+default values are taken).
+
 Execution
 ---------
 
@@ -21,17 +28,24 @@ flag if you want to create the image):
 .. image:: ../_images/FoamPacking.png
     :width: 50%
 
+Outputs
+-------
+
+The main output is the ``*Packing.csv`` file, which contains center position
+(``x``, ``y``, and ``z``) and diameter (``d``) of each sphere.
+
 
 Size distribution
 -----------------
 
 Note that sphere size distribution does not exactly copy prescribed continual
-size distribution (especially for low number of spheres - see below).
+size distribution (especially for low number of spheres - image below is for 27
+cells).
 
 .. image:: ../_images/FoamPacking_histogram.png
 
 Log-normal sphere size distribution is influenced by shape (``--pack.shape``)
-and scale (``--pack.shape``). It is defined as
+and scale (``--pack.scale``). It is defined as
 
 .. math::
 
@@ -52,7 +66,7 @@ Shape equal to zero corresponds to uniform size distribution. Shape larger than
 Algorithms
 ----------
 
-It is possible choose between several sphere packing algorithms using
+It is possible to choose between several sphere packing algorithms using
 ``--pack.alg`` flag. ``simple`` is a naive packing algorithm that is
 implemented directly. ``ls``, ``fba``, ``lsgd``, ``lsebc``, ``ojt``, ``kjt``
 are more robust algorithms from `packing-generation

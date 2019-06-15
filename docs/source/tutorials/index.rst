@@ -4,7 +4,7 @@ Tutorials
 Basic functionality is showcased on following examples
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     gettingStarted
     packing
