@@ -2,12 +2,11 @@
 
 @author Pavel Ferkl
 """
-from __future__ import print_function
+from __future__ import print_function, division
 import re
 import shutil
 import subprocess as sp
 import numpy as np
-from blessings import Terminal
 NAMES = {
     'point': 'Point',
     'line': 'Line',
@@ -363,6 +362,7 @@ def move_to_box(infile, wfile, outfile, volumes):
     """
     with open(wfile, 'w') as wfl:
         mvol = max(volumes)
+        hvol = int(mvol / 2)
         wfl.write('SetFactory("OpenCASCADE");\n\n')
         wfl.write('Include "{0}";\n\n'.format(infile))
         wfl.write('Block({0}) = {{-1,-1,-1,3,3,1}};\n'.format(mvol + 1))
@@ -377,17 +377,17 @@ def move_to_box(infile, wfile, outfile, volumes):
         wfl.write('\n')
         wfl.write(
             'zol() = BooleanIntersection'
-            + '{{Volume{{1:{0}}};}}'.format(mvol / 2)
+            + '{{Volume{{1:{0}}};}}'.format(hvol)
             + '{{Volume{{{0}}};}};\n'.format(mvol + 1)
         )
         wfl.write(
             'zoh() = BooleanIntersection'
-            + '{{Volume{{1:{0}}};}}'.format(mvol / 2)
+            + '{{Volume{{1:{0}}};}}'.format(hvol)
             + '{{Volume{{{0}}};}};\n'.format(mvol + 2)
         )
         wfl.write(
             'zin() = BooleanIntersection'
-            + '{{Volume{{1:{0}}}; Delete;}}'.format(mvol / 2)
+            + '{{Volume{{1:{0}}}; Delete;}}'.format(hvol)
             + '{{Volume{{{0}}};}};\n'.format(mvol + 3)
         )
         wfl.write('Translate{0,0, 1}{Volume{zol()};}\n')
@@ -428,17 +428,17 @@ def move_to_box(infile, wfile, outfile, volumes):
         wfl.write('Translate{-1,0,0}{Volume{xoh()};}\n\n')
         wfl.write(
             'zol2() = BooleanIntersection'
-            + '{{Volume{{{0}:{1}}};}}'.format(mvol / 2 + 1, mvol)
+            + '{{Volume{{{0}:{1}}};}}'.format(hvol + 1, mvol)
             + '{{Volume{{{0}}}; Delete;}};\n'.format(mvol + 1)
         )
         wfl.write(
             'zoh2() = BooleanIntersection'
-            + '{{Volume{{{0}:{1}}};}}'.format(mvol / 2 + 1, mvol)
+            + '{{Volume{{{0}:{1}}};}}'.format(hvol + 1, mvol)
             + '{{Volume{{{0}}}; Delete;}};\n'.format(mvol + 2)
         )
         wfl.write(
             'zin2() = BooleanIntersection'
-            + '{{Volume{{{0}:{1}}}; Delete;}}'.format(mvol / 2 + 1, mvol)
+            + '{{Volume{{{0}:{1}}}; Delete;}}'.format(hvol + 1, mvol)
             + '{{Volume{{{0}}}; Delete;}};\n'.format(mvol + 3)
         )
         wfl.write('Translate{0,0, 1}{Volume{zol2()};}\n')
@@ -479,8 +479,7 @@ def move_to_box(infile, wfile, outfile, volumes):
         wfl.write('Translate{-1,0,0}{Volume{xoh2()};}\n\n')
         wfl.write('Physical Volume ("walls") = {xol(),xoh(),xin()};\n')
         wfl.write('Physical Volume ("cells") = {xol2(),xoh2(),xin2()};\n\n')
-    call = sp.Popen(['gmsh', wfile, '-0'])
-    call.wait()
+    sp.Popen(['gmsh', wfile, '-0']).wait()
     shutil.move(wfile + '_unrolled', outfile)
 
 
@@ -607,79 +606,3 @@ def prep_mesh_config(filename, sizing, char_length=0.1):
         fhl.write(r'Field[5].FieldsList = {2, 4};' + '\n')
         fhl.write('Background Field = 5;\n')
         fhl.write('Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
-
-
-def main(fname, wall_thickness, verbose):
-    """
-    Main subroutine. Organizes workflow.
-
-    File.geo -> FileFixed.geo -> FileBox.geo -> FileBoxFixed.geo
-    """
-    term = Terminal()
-    print(
-        term.yellow
-        + "Working on file {}.geo.".format(fname)
-        + term.normal
-    )
-    # read Neper foam
-    sdat = read_geo(fname + ".geo")  # string data
-    # Neper creates physical surfaces, which we don't want
-    sdat.pop('physical_surface')
-    # remove orientation, OpenCASCADE compatibility
-    fix_strings(sdat['line_loop'])
-    fix_strings(sdat['surface_loop'])
-    # create walls
-    edat = extract_data(sdat)
-    create_walls(edat, wall_thickness)
-    sdat = collect_strings(edat)
-    save_geo(fname + "Walls.geo", sdat)
-    # move foam to a periodic box and save it to a file
-    move_to_box(
-        fname + "Walls.geo", "move_to_box.geo", fname + "WallsBox.geo",
-        range(1, len(sdat['volume']) + 1)
-    )
-    # read boxed foam
-    sdat = read_geo(fname + "WallsBox.geo")  # string data
-    edat = extract_data(sdat)  # extracted data
-    # duplicity of points, lines, etc. was created during moving to a box
-    remove_duplicity(edat)
-    # restore OpenCASCADE compatibility
-    split_loops(edat, 'line_loop')
-    split_loops(edat, 'surface_loop')
-    # identification of physical surfaces for boundary conditions
-    surf0 = surfaces_in_plane(edat, 0.0, 2)
-    if verbose:
-        print('Z=0 surface IDs: {}'.format(surf0))
-    surf1 = surfaces_in_plane(edat, 1.0, 2)
-    if verbose:
-        print('Z=1 surface IDs: {}'.format(surf1))
-    surf = other_surfaces(edat, surf0, surf1)
-    if verbose:
-        print('other boundary surface IDs: {}'.format(surf))
-    # Physical surfaces create problems in mesh conversion step. Bug in gmsh?
-    # Boundaries will be defined in fenics/dolfin directly.
-    # edat['physical_surface'] = {1:surf0, 2:surf1, 3:surf}
-    # identification of periodic surfaces for periodic mesh creation
-    edat['periodic_surface_X'] = periodic_surfaces(
-        edat, surf, np.array([1, 0, 0])
-    )
-    if verbose:
-        print(
-            'surface IDs periodic in X: {}'.format(edat['periodic_surface_X'])
-        )
-    edat['periodic_surface_Y'] = periodic_surfaces(
-        edat, surf, np.array([0, 1, 0])
-    )
-    if verbose:
-        print(
-            'surface IDs periodic in Y: {}'.format(edat['periodic_surface_Y'])
-        )
-    # restore_sizing(edat)
-    # save the final foam
-    sdat = collect_strings(edat)
-    save_geo(fname + "WallsBoxFixed.geo", sdat)
-    print(
-        term.yellow
-        + "Prepared file {}WallsBoxFixed.geo.".format(fname)
-        + term.normal
-    )

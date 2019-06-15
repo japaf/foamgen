@@ -15,6 +15,7 @@ from blessings import Terminal
 from . import packing
 from . import tessellation
 from . import geo_tools
+from . import morphology
 from . import smesh
 
 
@@ -111,7 +112,7 @@ def generate(cfg):
                                 cfg.tess.render)
     if cfg.morph.active:
         print(term.yellow + "Creating final morphology." + term.normal)
-        geo_tools.main(cfg.filename, cfg.morph.dwall, cfg.verbose)
+        morphology.make_walls(cfg.filename, cfg.morph.dwall, cfg.verbose)
     if cfg.umesh.active:
         print(term.yellow + "Creating unstructured mesh." + term.normal)
         unstructured_mesh(cfg.filename,

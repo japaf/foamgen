@@ -20,8 +20,8 @@ from .geo_tools import read_geo, extract_data
 
 def tessellate(fname, number_of_cells, visualize, gnuplot=True):
     """
-    Use Laguerre tessellation from Neper to create dry foam. Uses Project01.rco
-    as input file.
+    Use Laguerre tessellation from Neper to create dry foam. Uses
+    FilePacking.csv as input file.
     """
     prep(fname)
     neper_tessellation(fname, number_of_cells)
@@ -34,9 +34,8 @@ def tessellate(fname, number_of_cells, visualize, gnuplot=True):
 
 def prep(fname):
     """Prepare input files for Neper."""
-    dtf = pd.read_csv(fname + 'Packing.rco', sep=r'\s+',
-                      names=('x', 'y', 'z', 'r'))
-    dtf['r'] /= 2
+    dtf = pd.read_csv(fname + 'Packing.csv')
+    dtf['r'] = dtf['d'] / 2
     dtf[['x', 'y', 'z']].to_csv('centers.txt', sep='\t', header=None,
                                 index=None)
     dtf[['r']].to_csv('rads.txt', sep='\t', header=None, index=None)
@@ -56,7 +55,6 @@ def neper_tessellation(fname, number_of_cells, rve_size=1):
         -o {2}Tessellation -format tess,geo \
         -statcell vol -statedge length -statface area \
         -statver x".format(number_of_cells, rve_size, fname)
-    print(command)
     sp.Popen(sx.split(command)).wait()
 
 

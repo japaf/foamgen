@@ -70,7 +70,7 @@ def simple_packing(shape, scale, number_of_cells):
                         break
     dtf = pd.DataFrame(centers, columns=('x', 'y', 'z'))
     dtf['d'] = 2 * rads
-    return dtf.values, rads
+    return dtf, rads
 
 
 def create_input(npart, domain=1.0):
@@ -129,19 +129,20 @@ def read_results():
         por_final = float(fin.readline().split()[2])
         print('Theoretical porosity:', por_theory)
         print('Final porosity:', por_final)
+    data = pd.DataFrame(columns=('x', 'y', 'z', 'd'))
     with open("packing.xyzd", "rb") as fin:
         btxt = fin.read()
         txt = list(struct.unpack("<" + "d" * (len(btxt) // 8), btxt))
-        data = np.reshape(txt, (-1, 4))
-    data[:, 3] = data[:, 3] * \
-        ((1 - por_final) / (1 - por_theory))**(1 / 3)
+        data = pd.DataFrame(np.reshape(txt, (-1, 4)),
+                            columns=('x', 'y', 'z', 'd'))
+    data['d'] = data['d'] * ((1 - por_final) / (1 - por_theory))**(1 / 3)
     return data
 
 
 def render_packing(fname, data, domain=1.0, pixels=1000):
     """Save picture of packed domain. Uses spack.
     https://pyspack.readthedocs.io/en/latest/"""
-    pack = spack.Packing(data[:, 0:3], data[:, 3], L=domain)
+    pack = spack.Packing(data[['x', 'y', 'z']], data['d'], L=domain)
     print(pack.contacts())
     scene = pack.scene(rot=np.pi / 4, camera_height=0.5,
                        camera_dist=2.5e1, angle=4, cmap='autumn',
@@ -150,7 +151,7 @@ def render_packing(fname, data, domain=1.0, pixels=1000):
                  height=pixels, antialiasing=0.0001)
 
 
-def generate_structure(flag, maxit):
+def generate_structure(flag):
     """Runs the packing algorithm."""
     if os.path.isfile("packing.nfo"):
         os.remove("packing.nfo")
@@ -176,7 +177,7 @@ def clean_packing():
 def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
                  render, clean):
     """
-    Packs spheres into a periodic domain. Creates file ending Packing.rco with
+    Packs spheres into a periodic domain. Creates file ending Packing.csv with
     sphere centers and radii. Simple model is implemented directly, other
     algorithms use Vasili Baranov's code:
     https://github.com/VasiliBaranov/packing-generation.
@@ -188,7 +189,7 @@ def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
         for i in range(maxit):
             print('Iteration: {}'.format(i + 1))
             rads = make_csd(shape, scale, number_of_cells)
-            generate_structure('-' + algorithm, maxit)
+            generate_structure('-' + algorithm)
             if os.path.isfile("packing.nfo"):
                 break
         if not os.path.isfile("packing.nfo"):
@@ -197,7 +198,7 @@ def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
                 'Try to change number of particles or size distribution.')
         data = read_results()
     save_csd(fname, rads, shape, scale)
-    np.savetxt(fname + 'Packing.rco', data)
+    data.to_csv(fname + 'Packing.csv', index=None)
     if render:
         render_packing(fname, data)
     if clean:
