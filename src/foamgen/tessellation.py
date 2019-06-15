@@ -18,12 +18,12 @@ import pandas as pd
 from .geo_tools import read_geo, extract_data
 
 
-def tessellate(fname, number_of_cells, visualize, clean, gnuplot=True):
+def tessellate(fname, visualize, clean, gnuplot=True):
     """
     Use Laguerre tessellation from Neper to create dry foam. Uses
     FilePacking.csv as input file.
     """
-    prep(fname)
+    number_of_cells = prep(fname)
     neper_tessellation(fname, number_of_cells)
     if visualize:
         neper_visualize(fname)
@@ -40,6 +40,7 @@ def prep(fname):
     dtf[['x', 'y', 'z']].to_csv('centers.txt', sep='\t', header=None,
                                 index=None)
     dtf[['r']].to_csv('rads.txt', sep='\t', header=None, index=None)
+    return len(dtf)
 
 
 def neper_tessellation(fname, number_of_cells, rve_size=1):

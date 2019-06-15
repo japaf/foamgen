@@ -112,7 +112,6 @@ def generate(cfg):
     if cfg.tess.active:
         print(term.yellow + "Tessellating." + term.normal)
         tessellation.tessellate(cfg.filename,
-                                cfg.pack.ncells,
                                 cfg.tess.render,
                                 cfg.tess.clean)
     if cfg.morph.active:
