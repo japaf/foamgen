@@ -18,7 +18,7 @@ import pandas as pd
 from .geo_tools import read_geo, extract_data
 
 
-def tessellate(fname, number_of_cells, visualize, gnuplot=True):
+def tessellate(fname, number_of_cells, visualize, clean, gnuplot=True):
     """
     Use Laguerre tessellation from Neper to create dry foam. Uses
     FilePacking.csv as input file.
@@ -29,7 +29,8 @@ def tessellate(fname, number_of_cells, visualize, gnuplot=True):
         neper_visualize(fname)
     if gnuplot:
         save_gnuplot(fname)
-    clean()
+    if clean:
+        clean_files()
 
 
 def prep(fname):
@@ -80,7 +81,7 @@ def save_gnuplot(fname):
                 point[pidx[1]][0], point[pidx[1]][1], point[pidx[1]][2]))
 
 
-def clean():
+def clean_files():
     """Delete unnecessary files."""
     flist = [
         'centers.txt',

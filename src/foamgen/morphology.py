@@ -6,7 +6,7 @@ from blessings import Terminal
 from . import geo_tools as gt
 
 
-def make_walls(fname, wall_thickness, verbose):
+def make_walls(fname, wall_thickness, clean, verbose):
     """
     Add walls of a certain thickness to a tessellated foam. It is assumed that
     input file uses gmsh built-in kernel. Final geometry is created in the
@@ -29,7 +29,8 @@ def make_walls(fname, wall_thickness, verbose):
     oname = fname + "WallsBox.geo"
     to_box(iname, oname, ncells, verbose)
     # delete redundant files
-    clean()
+    if clean:
+        clean_files()
     print(
         term.yellow
         + "Prepared file {}.".format(oname)
@@ -106,7 +107,7 @@ def to_box(iname, oname, ncells, verbose):
     gt.save_geo(oname, sdat)
 
 
-def clean():
+def clean_files():
     """Delete unnecessary files."""
     flist = [
         'move_to_box.geo',
