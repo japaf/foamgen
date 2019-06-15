@@ -36,7 +36,7 @@ This produces foam morphology similar to this one:
 Outputs
 :::::::
 
-The main output is the ``*WallsBox.geo`` file, which contains the foam
+The main output is the ``*Morphology.geo`` file, which contains the foam
 morphology in ``gmsh`` CAD format. The file defines periodic faces for meshing
 purposes and two physical volumes. One for cells:
 

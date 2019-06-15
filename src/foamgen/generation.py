@@ -9,13 +9,12 @@ foam density and struts are optionally added.
 from __future__ import division, print_function
 import sys
 import datetime
-import subprocess as sp
 import yamlargparse as yp
 from blessings import Terminal
 from . import packing
 from . import tessellation
-from . import geo_tools
 from . import morphology
+from . import umesh
 from . import smesh
 
 
@@ -61,10 +60,6 @@ def parse():
                      help='clean redundant files')
     prs.add_argument('-u', '--umesh.active', default=False,
                      action='store_true', help='create unstructured mesh')
-    prs.add_argument('--umesh.geom', default=True,
-                     action='store_true', help='create geometry')
-    prs.add_argument('--umesh.mesh', default=True,
-                     action='store_true', help='perform meshing')
     prs.add_argument('--umesh.psize', default=0.025, type=float,
                      help='mesh size near geometry points')
     prs.add_argument('--umesh.esize', default=0.1, type=float,
@@ -122,11 +117,11 @@ def generate(cfg):
                               cfg.verbose)
     if cfg.umesh.active:
         print(term.yellow + "Creating unstructured mesh." + term.normal)
-        unstructured_mesh(cfg.filename,
-                          [cfg.umesh.psize,
-                           cfg.umesh.esize,
-                           cfg.umesh.csize],
-                          cfg.umesh.convert)
+        umesh.unstructured_mesh(cfg.filename,
+                                [cfg.umesh.psize,
+                                 cfg.umesh.esize,
+                                 cfg.umesh.csize],
+                                cfg.umesh.convert)
     if cfg.smesh.active:
         print(term.yellow + "Creating structured mesh." + term.normal)
         smesh.structured_grid(cfg.filename,
@@ -137,21 +132,3 @@ def generate(cfg):
                               cfg.smesh.strut)
     time_end = datetime.datetime.now()
     print("Foam created in: {}".format(time_end - time_start))
-
-
-def unstructured_mesh(filename, sizing, convert):
-    """Create unstructured mesh."""
-    geo_tools.prep_mesh_config(filename, sizing)
-    mesh_domain(filename + "_uns.geo")
-    if convert:
-        convert_mesh(filename + "_uns.msh", filename + "_uns.xml")
-
-
-def mesh_domain(domain):
-    """Mesh computational domain using Gmsh."""
-    sp.Popen(['gmsh', '-3', '-v', '3', '-format', 'msh2', domain]).wait()
-
-
-def convert_mesh(input_mesh, output_mesh):
-    """Convert mesh to xml using dolfin-convert."""
-    sp.Popen(['dolfin-convert', input_mesh, output_mesh]).wait()

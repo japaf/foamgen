@@ -575,11 +575,11 @@ def restore_sizing(edat):
 
 def prep_mesh_config(filename, sizing, char_length=0.1):
     """Create file specifying mesh parameters."""
-    sdat = read_geo(filename + "WallsBoxFixed.geo")
+    sdat = read_geo(filename + "Morphology.geo")
     edat = extract_data(sdat)
     edges = r'{' + ','.join(str(x) for x in edat['line'].keys()) + r'}'
-    with open(filename + '_uns.geo', "w") as fhl:
-        fhl.write('Include "{}WallsBoxFixed.geo";\n'.format(filename))
+    with open(filename + 'UMesh.geo', "w") as fhl:
+        fhl.write('Include "{}Morphology.geo";\n'.format(filename))
         fhl.write('Mesh.CharacteristicLengthMax = {0};\n'.format(char_length))
         fhl.write('psize = {0};\n'.format(sizing[0]))
         fhl.write('esize = {0};\n'.format(sizing[1]))

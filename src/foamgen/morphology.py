@@ -1,6 +1,7 @@
 """create foam morphology in CAD format"""
 from __future__ import print_function
 import os
+import shutil
 import numpy as np
 from blessings import Terminal
 from . import geo_tools as gt
@@ -12,7 +13,8 @@ def make_walls(fname, wall_thickness, clean, verbose):
     input file uses gmsh built-in kernel. Final geometry is created in the
     OpenCASCADE kernel.
 
-    FileTessellation.geo -> FileWalls.geo -> FileWallsBox.geo
+    FileTessellation.geo -> FileWalls.geo -> FileWallsBox.geo ->
+    FileMorphology.geo
     """
     term = Terminal()
     # create walls
@@ -28,6 +30,10 @@ def make_walls(fname, wall_thickness, clean, verbose):
     iname = oname
     oname = fname + "WallsBox.geo"
     to_box(iname, oname, ncells, verbose)
+    # overwrite morphology file
+    iname = oname
+    oname = fname + "Morphology.geo"
+    shutil.move(iname, oname)
     # delete redundant files
     if clean:
         clean_files()
