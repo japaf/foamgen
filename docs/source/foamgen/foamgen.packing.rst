@@ -9,7 +9,7 @@ foamgen.packing
 
    .. autosummary::
    
-      clean_packing
+      clean_files
       create_input
       generate_structure
       make_csd

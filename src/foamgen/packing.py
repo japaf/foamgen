@@ -19,22 +19,24 @@ import matplotlib.pyplot as plt
 import spack
 
 
-def simple_packing(shape, scale, number_of_cells):
+def simple_packing(diam):
     """Simple and fast algorithm for packing.
 
-    Often leads to overlapping spheres. Cell size distribution is usually not
-    satisfied very well. Use of this algorithm at this stage is discouraged.
+    Often leads to overlapping spheres. Can lead to infinite loop, thus it
+    raises Exception after 10 s. Use of this algorithm at this stage is
+    discouraged.
 
     Args:
-        shape (float): shape factor of log-normal distribution
-        scale (float): scale factor of log-normal distribution
-        number_of_cells (int): number of spheres to be packed
+        diam (ndarray): array of sphere diameters
 
     Returns:
-        dtf (DataFrame): center positions and diameters of spheres
-        rads
+        DataFrame: center positions and diameters of spheres
+
+    Raises:
+        Exception: when running for more than 10 s
     """
-    rads = make_csd(shape, scale, number_of_cells) / 2
+    number_of_cells = len(diam)
+    rads = diam / 2
     rads.sort()
     vol = sum((2 * rads)**3)
     vol = vol * 1.40
@@ -76,11 +78,18 @@ def simple_packing(shape, scale, number_of_cells):
                         break
     dtf = pd.DataFrame(centers, columns=('x', 'y', 'z'))
     dtf['d'] = 2 * rads
-    return dtf, rads
+    return dtf
 
 
 def create_input(npart, domain=1.0):
-    """Create input file for packing program."""
+    """Create input file for packing-generation program.
+
+    Function creates ``generation.conf`` file with some default inputs.
+
+    Args:
+        npart (int): number of spheres
+        domain (float, optional): size of domain
+    """
     txt = """Particles count: {0}
 Packing size: {1} {1} {1}
 Generation start: 1
@@ -94,19 +103,43 @@ Contraction rate: 1.328910e-005
 
 
 def make_csd(shape, scale, npart):
-    """Create cell size distribution and save it to file."""
+    """Create cell size distribution and save it to file.
+
+    Log-normal distribution from scipy is used. Creates ``diameters.txt`` file
+    with sphere diameters.
+
+    Args:
+        shape (float): shape size parameter of log-normal distribution
+        scale (float): scale size parameter of log-normal distribution
+        npart (int): number of spheres
+
+    Returns:
+        ndarray: array of sphere diameters
+    """
     if shape == 0:
-        rads = [scale + 0 * x for x in range(npart)]
+        diam = [scale + 0 * x for x in range(npart)]
     else:
-        rads = lognorm.rvs(shape, scale=scale, size=npart)
+        diam = lognorm.rvs(shape, scale=scale, size=npart)
     with open('diameters.txt', 'w') as fout:
-        for rad in rads:
+        for rad in diam:
             fout.write('{0}\n'.format(rad))
-    return rads
+    return diam
 
 
-def save_csd(fname, rads, shape, scale, show_plot=False):
-    """Save cell size distribution plot."""
+def save_csd(fname, diam, shape, scale, show_plot=False):
+    """Save cell size distribution plot.
+
+    Creates files ``*.Packing_histogram.png`` and ``*.Packing_histogram.pdf``
+    with cell size distribution histogram and continual probability density
+    function.
+
+    Args:
+        fname (str): base filename
+        diam (ndarray): array of sphere diameters
+        shape (float): shape size parameter of log-normal distribution
+        scale (float): scale size parameter of log-normal distribution
+        show_plot (bool, optional): create window with plot
+    """
     if shape == 0:
         xpos = np.linspace(scale / 2, scale * 2, 100)
     else:
@@ -115,7 +148,7 @@ def save_csd(fname, rads, shape, scale, show_plot=False):
     plt.figure(figsize=(12, 8))
     plt.rcParams.update({'font.size': 16})
     plt.plot(xpos, lognorm.pdf(xpos, shape, scale=scale), lw=3, label='input')
-    plt.hist(rads, density=True, label='spheres')
+    plt.hist(diam, density=True, label='spheres')
     plt.grid()
     plt.xlabel('Size')
     plt.ylabel('Probability density function')
@@ -127,7 +160,13 @@ def save_csd(fname, rads, shape, scale, show_plot=False):
 
 
 def read_results():
-    """Reads results of packing algorithm."""
+    """Reads results of packing algorithm.
+
+    Packing results are read from ``packing.nfo`` and ``packing.xyzd`` files.
+
+    Returns:
+        DataFrame: center positions and diameters of spheres
+    """
     with open("packing.nfo", "r") as fin:
         fin.readline()
         fin.readline()
@@ -146,8 +185,17 @@ def read_results():
 
 
 def render_packing(fname, data, domain=1.0, pixels=1000):
-    """Save picture of packed domain. Uses spack.
-    https://pyspack.readthedocs.io/en/latest/"""
+    """Save picture of packed domain.
+
+    Uses `spack <https://pyspack.readthedocs.io/en/latest/>`_. Creates
+    ``*Packing.png`` file.
+
+    Args:
+        fname (str): base filename
+        data (DataFrame): center positions and diameters of spheres
+        domain (float, optional): size of domain
+        pixels (int, optional): picture resolution
+    """
     pack = spack.Packing(data[['x', 'y', 'z']], data['d'], L=domain)
     print(pack.contacts())
     scene = pack.scene(rot=np.pi / 4, camera_height=0.5,
@@ -158,13 +206,19 @@ def render_packing(fname, data, domain=1.0, pixels=1000):
 
 
 def generate_structure(flag):
-    """Runs the packing algorithm."""
+    """Runs the packing algorithm.
+
+    ``PackingGeneration.exe`` must exist. ``generation.conf`` must exist.
+
+    Args:
+        flag (str): argument to be passed to packing-generation program
+    """
     if os.path.isfile("packing.nfo"):
         os.remove("packing.nfo")
     subprocess.Popen(['PackingGeneration.exe', flag]).wait()
 
 
-def clean_packing():
+def clean_files():
     """Delete unnecessary files."""
     flist = [
         'contraction_energies.txt',
@@ -182,19 +236,33 @@ def clean_packing():
 
 def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
                  render, clean):
-    """
-    Packs spheres into a periodic domain. Creates file ending Packing.csv with
-    sphere centers and radii. Simple model is implemented directly, other
-    algorithms use Vasili Baranov's code:
-    https://github.com/VasiliBaranov/packing-generation.
+    """Packs spheres into periodic domain.
+
+    Creates file ending ``Packing.csv`` with sphere centers and radii. Simple
+    model is implemented directly, other algorithms use Vasili Baranov's `code
+    <https://github.com/VasiliBaranov/packing-generation>`_.
+
+    Args:
+        fname (str): base filename
+        shape (float): shape size parameter of log-normal distribution
+        scale (float): scale size parameter of log-normal distribution
+        number_of_cells (int): number of spheres
+        algorithm (str): name of packing algorithm
+        maxit (int): number of tries for packing algorithm
+        render (bool): save picture of packing if True
+        clean (bool): delete redundant files if True
+
+    Raises:
+        Exception: when maximum number of iterations was reached
     """
     if algorithm == 'simple':
-        data, rads = simple_packing(shape, scale, number_of_cells)
+        diam = make_csd(shape, scale, number_of_cells)
+        data = simple_packing(diam)
     else:
         create_input(number_of_cells)
         for i in range(maxit):
             print('Iteration: {}'.format(i + 1))
-            rads = make_csd(shape, scale, number_of_cells)
+            diam = make_csd(shape, scale, number_of_cells)
             generate_structure('-' + algorithm)
             if os.path.isfile("packing.nfo"):
                 break
@@ -203,9 +271,9 @@ def pack_spheres(fname, shape, scale, number_of_cells, algorithm, maxit,
                 'Packing algorithm failed. ' +
                 'Try to change number of particles or size distribution.')
         data = read_results()
-    save_csd(fname, rads, shape, scale)
+    save_csd(fname, diam, shape, scale)
     data.to_csv(fname + 'Packing.csv', index=None)
     if render:
         render_packing(fname, data)
     if clean:
-        clean_packing()
+        clean_files()
