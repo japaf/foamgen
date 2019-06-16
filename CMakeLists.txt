@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 project (foamgen)
 
-SET(SOURCE_DIR "src/foamgen")
+SET(SOURCE_DIR "src/foamgen/cxx")
 include_directories(${SOURCE_DIR})
 set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/)
 find_package(GSL REQUIRED)
