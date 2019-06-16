@@ -33,14 +33,24 @@ release = '0.1.0'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinxcontrib.napoleon',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinxcontrib.bibtex',
-    'sphinx.ext.autosummary',
 ]
+
+
+#autodoc defaults
+autodoc_default_options = {
+    'members': True,
+    'show-inheritance': True,
+}
+
+#Generate autosummary files
+autosummary_generate = True  # Make _autosummary files and include them
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

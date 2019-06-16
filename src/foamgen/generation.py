@@ -1,10 +1,9 @@
-"""Module that organizes creation of foam morphoogy.
+"""
+Generation module
+=================
+:synopsis: Organizes creation of foam morphology
 
-First, the geometric tessellation is performed so that the resulting foam has
-the correct bubble size distribution. Then several mesh conversions are made to
-obtain the foam image in desired format. Finally, foam is voxelized to desired
-foam density and struts are optionally added.
-
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
 """
 from __future__ import division, print_function
 import sys
@@ -19,7 +18,13 @@ from . import smesh
 
 
 def parse():
-    """Parse arguments using yamlargparse and call generate function."""
+    """
+    Parse CLI arguments and call :func:`generate` function.
+
+    Parsing is done using `yamlargparse
+    <https://pypi.org/project/yamlargparse/>`_. This function is called by the
+    ``foamgen`` executable.
+    """
     prs = yp.ArgumentParser(
         prog='foamgen',
         error_handler=yp.usage_and_exit_error_handler,
@@ -90,7 +95,12 @@ def parse():
 
 
 def generate(cfg):
-    """Generate foam morphology."""
+    """
+    Generate foam morphology.
+
+    Args:
+        cfg (Namespace): parsed inputs
+    """
     # Creates terminal for colour output
     term = Terminal()
     time_start = datetime.datetime.now()

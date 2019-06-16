@@ -35,6 +35,7 @@ References
 
    install
    tutorials/index
+   foamgen/index
    developer/index
    about
 
