@@ -18,8 +18,7 @@ from . import smesh
 
 
 def parse():
-    """
-    Parse CLI arguments and call :func:`generate` function.
+    """Parse CLI arguments and call :func:`generate` function.
 
     Parsing is done using `yamlargparse
     <https://pypi.org/project/yamlargparse/>`_. This function is called by the
@@ -95,8 +94,7 @@ def parse():
 
 
 def generate(cfg):
-    """
-    Generate foam morphology.
+    """Generate foam morphology.
 
     Args:
         cfg (Namespace): parsed inputs
