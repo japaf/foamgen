@@ -1,13 +1,10 @@
 """
-@file       packing.py
-@namespace  FoamConstruction.packing
-@ingroup    mod_foamConstruction
-@brief      Sphere packing.
-@author     Mohammad Marvi-Mashhadi
-@author     Pavel Ferkl
-@copyright  2014-2016, MoDeNa Project. GNU Public License.
-@details
-Prepares packed spheres for tessellation.
+Packing module
+==============
+:synopsis: Prepares packed spheres for tessellation.
+
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
+.. moduleauthor:: Mohammad Marvi-Mashhadi <mohammad.marvi@imdea.org>
 """
 from __future__ import division, print_function
 import struct
@@ -23,9 +20,19 @@ import spack
 
 
 def simple_packing(shape, scale, number_of_cells):
-    """
-    Simple and fast algorithm for packing. Can lead to overlapping spheres.
-    Cell size distribution is often not satisfied.
+    """Simple and fast algorithm for packing.
+
+    Often leads to overlapping spheres. Cell size distribution is usually not
+    satisfied very well. Use of this algorithm at this stage is discouraged.
+
+    Args:
+        shape (float): shape factor of log-normal distribution
+        scale (float): scale factor of log-normal distribution
+        number_of_cells (int): number of spheres to be packed
+
+    Returns:
+        dtf (DataFrame): center positions and diameters of spheres
+        rads
     """
     rads = make_csd(shape, scale, number_of_cells) / 2
     rads.sort()
@@ -48,10 +55,9 @@ def simple_packing(shape, scale, number_of_cells):
             pick_x = lch * random.random()
             pick_y = lch * random.random()
             pick_z = lch * random.random()
-            while (lch - rads[j] >= pick_x
-                   and lch - rads[j] >= pick_y
-                   and lch - rads[j] >= pick_z and rads[j] < pick_x
-                   and rads[j] < pick_y and rads[j] < pick_z):
+            while (rads[j] < pick_x <= lch - rads[j] and
+                   rads[j] < pick_y <= lch - rads[j] and
+                   rads[j] < pick_z <= lch - rads[j]):
                 pick_x = lch * random.random()
                 pick_y = lch * random.random()
                 pick_z = lch * random.random()

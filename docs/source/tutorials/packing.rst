@@ -71,4 +71,5 @@ It is possible to choose between several sphere packing algorithms using
 implemented directly. ``ls``, ``fba``, ``lsgd``, ``lsebc``, ``ojt``, ``kjt``
 are more robust algorithms from `packing-generation
 <https://github.com/VasiliBaranov/packing-generation>`_ library. ``fba``
-provides good compromise between speed and packing density.
+provides good compromise between speed and packing density. Use of ``simple``
+algorithm is discouraged.

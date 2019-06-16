@@ -5,3 +5,4 @@ Source Code Documentation
     :toctree:
 
     foamgen.generation
+    foamgen.packing

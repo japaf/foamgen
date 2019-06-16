@@ -1,7 +1,7 @@
 """
 Generation module
 =================
-:synopsis: Organizes creation of foam morphology
+:synopsis: Organizes creation of foam morphology.
 
 .. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
 """
