@@ -1,15 +1,10 @@
 """
-@file       tessellation.py
-@namespace  FoamConstruction.tessellation
-@ingroup    mod_foamConstruction
-@brief      Tesselation.
-@author     Mohammad Marvi-Mashhadi
-@author     Pavel Ferkl
-@copyright  2014-2016, MoDeNa Project. GNU Public License.
-@details
-Prepares representative volume element (RVE) of foam using Laguerre
-tessellation.
-Uses Neper 3.
+Tessellation module
+===================
+:synopsis: Periodic domain weighted tessellation.
+
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
+.. moduleauthor:: Mohammad Marvi-Mashhadi <mohammad.marvi@imdea.org>
 """
 import os
 import subprocess as sp
@@ -19,9 +14,16 @@ from .geo_tools import read_geo, extract_data
 
 
 def tessellate(fname, visualize, clean, gnuplot=True):
-    """
-    Use Laguerre tessellation from Neper to create dry foam. Uses
-    FilePacking.csv as input file.
+    """Use Laguerre tessellation to create dry foam.
+
+    Uses `Neper <http://neper.sourceforge.net/>`_ for tessellation.
+    ``*Packing.csv`` must exists.
+
+    Args:
+        fname (str): base filename
+        visualize (bool): create picture of tessellation if True
+        clean (bool): delete redundant files if True
+        gnuplot (bool, optional): save tessellation in gnuplot format if True
     """
     number_of_cells = prep(fname)
     neper_tessellation(fname, number_of_cells)
@@ -34,7 +36,16 @@ def tessellate(fname, visualize, clean, gnuplot=True):
 
 
 def prep(fname):
-    """Prepare input files for Neper."""
+    """Prepare input files for Neper.
+
+    Creates ``centers.txt`` and ``rads.txt`` files.
+
+    Args:
+        fname (str): base filename
+
+    Returns:
+        int: number of cells
+    """
     dtf = pd.read_csv(fname + 'Packing.csv')
     dtf['r'] = dtf['d'] / 2
     dtf[['x', 'y', 'z']].to_csv('centers.txt', sep='\t', header=None,
@@ -44,9 +55,15 @@ def prep(fname):
 
 
 def neper_tessellation(fname, number_of_cells, rve_size=1):
-    """
-    Use Neper to perform tessellation. Note: Neper regularization is not
-    available for periodic tessellations.
+    """Run Neper tessellation module.
+
+    Neper regularization is not available for periodic tessellations. Requires
+    ``centers.txt`` and ``rads.txt`` files.
+
+    Args:
+        fname (str): base filename
+        number_of_cells (int): number of cells
+        rve_size (float, optional): domain size
     """
     command = "neper -T \
         -n {0:d} \
@@ -61,7 +78,14 @@ def neper_tessellation(fname, number_of_cells, rve_size=1):
 
 
 def neper_visualize(fname):
-    """Use neper to visualize tessellation. Requires Pov-Ray package."""
+    """Run Neper visualization module.
+
+    Requires POV-Ray package. Requires ``*Tessellation.tess`` and ``rads.txt``
+    files.
+
+    Args:
+        fname (str): base filename
+    """
     command = "neper -V {0}Tessellation.tess -datacellcol ori \
         -datacelltrs 0.5 -showseed all -dataseedrad @rads.txt \
         -dataseedtrs 1.0 -print {0}Tessellation".format(fname)
@@ -69,7 +93,13 @@ def neper_visualize(fname):
 
 
 def save_gnuplot(fname):
-    """Save tessellation in gnuplot format."""
+    """Save tessellation in gnuplot format.
+
+    Requires ``*Tessellation.tess`` file. Creates ``*Tessellation.gnu`` file.
+
+    Args:
+        fname (str): base filename
+    """
     sdat = read_geo(fname + "Tessellation.geo")
     edat = extract_data(sdat)
     point = edat["point"]
