@@ -7,3 +7,4 @@ Source Code Documentation
     foamgen.generation
     foamgen.packing
     foamgen.tessellation
+    foamgen.morphology

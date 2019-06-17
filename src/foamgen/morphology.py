@@ -1,4 +1,11 @@
-"""create foam morphology in CAD format"""
+"""
+Morphology module
+=================
+:synopsis: Create foam morphology in CAD format.
+
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
+.. moduleauthor:: Mohammad Marvi-Mashhadi <mohammad.marvi@imdea.org>
+"""
 from __future__ import print_function
 import os
 import shutil
@@ -8,13 +15,19 @@ from . import geo_tools as gt
 
 
 def make_walls(fname, wall_thickness, clean, verbose):
-    """
-    Add walls of a certain thickness to a tessellated foam. It is assumed that
-    input file uses gmsh built-in kernel. Final geometry is created in the
-    OpenCASCADE kernel.
+    """Add walls to a tessellated foam.
+
+    It is assumed that input file uses gmsh built-in kernel. Final geometry is
+    created in the OpenCASCADE kernel.
 
     FileTessellation.geo -> FileWalls.geo -> FileWallsBox.geo ->
     FileMorphology.geo
+
+    Args:
+        fname (str): base filename
+        wall_thickness (float): wall thickness parameter
+        clean (bool): delete redundant files if True
+        verbose (bool): print additional info to stdout if True
     """
     term = Terminal()
     # create walls
@@ -33,7 +46,7 @@ def make_walls(fname, wall_thickness, clean, verbose):
     # overwrite morphology file
     iname = oname
     oname = fname + "Morphology.geo"
-    shutil.move(iname, oname)
+    shutil.copy2(iname, oname)
     # delete redundant files
     if clean:
         clean_files()
@@ -45,8 +58,17 @@ def make_walls(fname, wall_thickness, clean, verbose):
 
 
 def add_walls(iname, oname, wall_thickness):
-    """
-    Create walls in foam morphology. Walls are created by shrinking each cell.
+    """Create walls by shrinking each cell.
+
+    Uses files in gmsh CAD format.
+
+    Args:
+        iname (str): input filename
+        oname (str): output filename
+        wall_thickness (float): wall thickness parameter
+
+    Returns:
+        int: number of cells
     """
     # read Neper foam
     sdat = gt.read_geo(iname)  # string data
@@ -65,9 +87,17 @@ def add_walls(iname, oname, wall_thickness):
 
 
 def to_box(iname, oname, ncells, verbose):
-    """
+    """Move foam to periodic box.
+
     Remove point duplicity, restore OpenCASCADE compatibility, define periodic
     and physical surfaces.
+
+    Args:
+        iname (str): input filename
+        oname (str): output filename
+        wall_thickness (float): wall thickness parameter
+        ncells (int): number of cells
+        verbose (bool): print additional info to stdout if True
     """
     tname = 'temp.geo'
     # move foam to a periodic box and save it to a file
