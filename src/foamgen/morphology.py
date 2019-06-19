@@ -4,7 +4,6 @@ Morphology module
 :synopsis: Create foam morphology in CAD format.
 
 .. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
-.. moduleauthor:: Mohammad Marvi-Mashhadi <mohammad.marvi@imdea.org>
 """
 from __future__ import print_function
 import os
@@ -95,7 +94,6 @@ def to_box(iname, oname, ncells, verbose):
     Args:
         iname (str): input filename
         oname (str): output filename
-        wall_thickness (float): wall thickness parameter
         ncells (int): number of cells
         verbose (bool): print additional info to stdout if True
     """

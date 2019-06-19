@@ -8,3 +8,4 @@ Source Code Documentation
     foamgen.packing
     foamgen.tessellation
     foamgen.morphology
+    foamgen.umesh
