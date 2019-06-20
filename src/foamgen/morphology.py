@@ -99,7 +99,7 @@ def to_box(iname, oname, ncells, verbose):
     """
     tname = 'temp.geo'
     # move foam to a periodic box and save it to a file
-    gt.move_to_box(iname, "move_to_box.geo", tname, range(1, ncells + 1))
+    gt.move_to_box(iname, "move_to_box.geo", tname, ncells)
     # read boxed foam
     sdat = gt.read_geo(tname)  # string data
     edat = gt.extract_data(sdat)  # extracted data
@@ -115,7 +115,7 @@ def to_box(iname, oname, ncells, verbose):
     surf1 = gt.surfaces_in_plane(edat, 1.0, 2)
     if verbose:
         print('Z=1 surface IDs: {}'.format(surf1))
-    surf = gt.other_surfaces(edat, surf0, surf1)
+    surf = gt.other_surfaces(edat, surf0 + surf1)
     if verbose:
         print('other boundary surface IDs: {}'.format(surf))
     # Physical surfaces create problems in mesh conversion step. Bug in gmsh?

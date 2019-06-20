@@ -1,6 +1,9 @@
-"""Manipulates .geo input files for gmsh.
+"""
+GMSH CAD support module
+=======================
+:synopsis: Manipulates ``.geo`` input files for ``gmsh``.
 
-@author Pavel Ferkl
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
 """
 from __future__ import print_function, division
 import re
@@ -33,35 +36,42 @@ NAME_LIST = [
 ]
 
 
-def my_find_all(regex, text):
-    """My definition of findall. Returns top level group in list."""
-    matches = re.finditer(regex, text)
-    my_list = []
-    for match in matches:
-        my_list.append(match.group(0))
-    return my_list
+def findall_top(regex, text):
+    """Like ``re.findall``, but returns only top level group in list.
 
+    Args:
+        regex (str): regex patern
+        text (str): text to search for patern
 
-def read_geo(geo_file, ignore_point_format=True, plane_surface=True):
+    Returns:
+        list: list of all matches
     """
-    Reads geometry input file for gmsh into dictionary. Based on regular
-    expressions. Points can contain optional fourth argument, thus it is better
-    to include everything in curly braces. Some geo files use Surface, some
-    Plane Surface. You should specify what you want to read.
+    matches = re.finditer(regex, text)
+    lst = []
+    for match in matches:
+        lst.append(match.group(0))
+    return lst
+
+
+def read_geo(geo_file, plane_surface=True):
+    """Read ``gmsh`` input file and extract geometry information.
+
+    Uses regular expressions. Some geo files use Surface, some Plane Surface.
+    You should specify what you want to read.
+
+    Args:
+        geo_file (str): input filename
+        plane_surface (bool, optional): input file contains "Plane Surface"
+            keyword
+
+    Returns:
+        dict: dictionary with read lines separated into points, lines, etc.
     """
     with open(geo_file, "r") as text_file:
         text = text_file.read()
         sdat = {}
         rexp = {}
-        if ignore_point_format:
-            rexp['point'] = r'Point\s?[(][0-9]+[)]\s[=]\s[{](.*?)[}][;]'
-        else:
-            rexp['point'] = (
-                r'Point\s[(][0-9]+[)]\s[=]\s[{]'
-                + r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)[,]'
-                + r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)[,]'
-                + r'[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)[}][;]'
-            )
+        rexp['point'] = r'Point\s?[(][0-9]+[)]\s[=]\s[{](.*?)[}][;]'
         rexp['line'] = r'Line\s?[(][0-9]+[)]\s[=]\s[{][0-9]+[,]\s?[0-9]+[}][;]'
         rexp['line_loop'] = (
             r'Line\sLoop\s?[(][0-9]+[)]\s[=]\s[{]([+-]?[0-9]+[,]?\s?)+[}][;]'
@@ -89,23 +99,31 @@ def read_geo(geo_file, ignore_point_format=True, plane_surface=True):
             + r'[{]([0-9]+[,]?\s?)+[}][;]'
         )
         for key in rexp:
-            sdat[key] = my_find_all(rexp[key], text)
+            sdat[key] = findall_top(rexp[key], text)
         return sdat
 
 
 def fix_strings(strings):
-    """
-    Removes negative sign (orientation) from loops. OpenCASCADE has problems
-    otherwise.
+    """Remove negative signs (orientation) from loops.
+
+    Used for OpenCASCADE kernel compatibility.
+
+    Args:
+        strings (list): list of line or surface loops in string format
     """
     for i, line in enumerate(strings):
         strings[i] = re.sub('[-]', '', line)
 
 
 def save_geo(geo_file, sdat, opencascade=True):
-    """
-    Creates geometry input file for gmsh. Input is a dictionary with prepared
-    string lines.
+    """Save ``gmsh`` CAD geometry input to file.
+
+    Input is a dictionary with prepared string lines.
+
+    Args:
+        geo_file (str): filename
+        sdat (dict): characterized geometry in string format
+        opencascade (bool, optional): prepend OpenCASCADE keyword if True
     """
     with open(geo_file, "w") as fhl:
         if opencascade:
@@ -117,7 +135,18 @@ def save_geo(geo_file, sdat, opencascade=True):
 
 
 def extract_data(sdat):
-    """Extracts geo data to dictionaries from list of geo strings."""
+    """Extract ``gmsh`` geometry data read by :func:`read_geo`.
+
+    Only coordinates are taken from points. Point sizing if any is discarded.
+
+    Opposite of :func:`collect_strings`.
+
+    Args:
+        sdat(dict): geometry data in string format
+
+    Returns:
+        dict: extracted geometry data
+    """
     edat = {}
     for key in sdat:
         lines = dict()
@@ -150,7 +179,16 @@ def extract_data(sdat):
 
 
 def collect_strings(edat):
-    """Creates lists of geo strings from geo data."""
+    """Convert extracted data to string format.
+
+    Opposite of :func:`extract_data`.
+
+    Args:
+        edat(dict): extracted geometry data
+
+    Returns:
+        dict: geometry data in string format
+    """
     sdat = {}
     for key in edat:
         sdat[key] = []
@@ -178,7 +216,18 @@ def collect_strings(edat):
 
 
 def surfaces_in_plane(edat, coord, direction):
-    """Finds surfaces that lie completely lie in a plane"""
+    """Finds surfaces that lie completely in specified plane.
+
+    Plane must be normal to one of cartesian axes.
+
+    Args:
+        edat (dict): extracted geometry data
+        coord (float): point on the chosen axis
+        direction (int): order of coordinate axis
+
+    Returns:
+        list: line loops in specified plane
+    """
     points_in_plane = []
     for i, point in edat['point'].items():
         if point[direction] == coord:
@@ -198,11 +247,18 @@ def surfaces_in_plane(edat, coord, direction):
     return line_loops_in_plane
 
 
-def other_surfaces(edat, surf0, surf1):
-    """
-    Returns list of boundary surfaces, which are not in surf0 or surf1. Assumes
-    that inner surfaces are shared by two volumes. Remove duplicates before
-    calling this function.
+def other_surfaces(edat, surfs):
+    """Find boundary surfaces, which are not in ``surfs``.
+
+    Assumes that inner surfaces are shared by two volumes. Remove duplicates
+    before calling this function.
+
+    Args:
+        edat (dict): extracted geometry data
+        surfs (list): list of surfaces, which should not be returned
+
+    Returns:
+        list: boundary surfaces, which are not in ``surfs``
     """
     all_surfaces = []
     for surface_loops in edat['volume'].values():
@@ -217,15 +273,25 @@ def other_surfaces(edat, surf0, surf1):
             count[surface] = 1
     surf = [
         i for i, j in count.items() if j == 1
-        and i not in surf0 and i not in surf1
+        and i not in surfs
     ]
     return surf
 
 
 def periodic_surfaces(edat, surfaces, vec, eps=1e-8):
-    """
-    Returns list of periodic surface pairs in specified direction. Parameter eps
-    is used to compare coordinates (floating point numbers).
+    """Find periodic surface pairs in specified direction.
+
+    Only linear periodicity is supported. Checks for surfaces with points
+    offset by specified vector within a tolerance.
+
+    Args:
+        edat (dict): extracted geometry data
+        surfaces (list): boundary surfaces
+        vec (ndarray): offset vector specification
+        eps (float, optional): tolerance
+
+    Returns:
+        list: periodic surface pairs
     """
     surface_points = dict()  # point IDs for each boundary surface
     boundary_points = dict()  # dictionary with only boundary points
@@ -269,10 +335,18 @@ def periodic_surfaces(edat, surfaces, vec, eps=1e-8):
 
 
 def identify_duplicity(edat, key, number, eps):
-    """
-    Core algorithm for removing duplicities. User should call remove_duplicity()
-    instead. Parameter eps is used to compare coordinates (floating point
-    numbers).
+    """Core algorithm for removing duplicities.
+
+    User should call :func:`remove_duplicity` instead.
+
+    Args:
+        edat (dict): extracted geometry data
+        key (str): type of geometry
+        number (str): number type (float or integer)
+        eps (float): tolerance
+
+    Returns:
+        dict: duplicit objects
     """
     dupl = dict()
     if number == 'float':
@@ -295,13 +369,25 @@ def identify_duplicity(edat, key, number, eps):
 
 
 def remove_duplicit_ids_from_keys(edat, dupl, key):
-    """Removes duplicit IDs from IDs of entities."""
+    """Removes duplicit IDs from IDs of entities.
+
+    Args:
+        edat (dict): extracted geometry data
+        dupl (dict): duplicit objects
+        key (str): type of geometry
+    """
     for i in dupl:
         del edat[key][i]
 
 
 def remove_duplicit_ids_from_values(edat, dupl, key):
-    """Removes duplicit IDs from values of entities."""
+    """Removes duplicit IDs from values of entities.
+
+    Args:
+        edat (dict): extracted geometry data
+        dupl (dict): duplicit objects
+        key (str): type of geometry
+    """
     for values in edat[key].values():
         for j, value in enumerate(values):
             if value in dupl:
@@ -309,9 +395,11 @@ def remove_duplicit_ids_from_values(edat, dupl, key):
 
 
 def remove_duplicity(edat, eps=1e-10):
-    """
-    Removes duplicit points, lines, etc. Parameter eps is used to compare
-    coordinates (floating point numbers).
+    """Removes duplicit points, lines, etc.
+
+    Args:
+        edat (dict): extracted geometry data
+        eps (float): tolerance
     """
     # points
     dupl = identify_duplicity(edat, 'point', 'float', eps)
@@ -330,11 +418,15 @@ def remove_duplicity(edat, eps=1e-10):
 
 
 def split_loops(edat, key):
-    """
-    Makes sure that line and surface loops contain only one loop. Surfaces and
-    volumes with holes are instead defined in Surface and Volume entries,
-    respectively. Needed because gmsh unrolls geometry in a way, which is
-    unusable with OpenCASCADE kernel.
+    """Makes sure that line and surface loops contain only one loop.
+
+    Surfaces and volumes with holes are instead defined in Surface and Volume
+    entries, respectively. Needed because gmsh unrolls geometry in a way, which
+    is unusable with OpenCASCADE kernel.
+
+    Args:
+        edat (dict): extracted geometry data
+        key (str): type of geometry
     """
     if key == 'line_loop':
         key2 = 'surface'
@@ -352,16 +444,24 @@ def split_loops(edat, key):
                 break
 
 
-def move_to_box(infile, wfile, outfile, volumes):
-    """
-    Moves periodic closed foam to periodic box. Uses gmsh, specifically boolean
-    operations and transformations from OpenCASCADE. The result is unrolled to
-    another geo file so that it can be quickly read and worked with in the
-    follow-up work. Operations are performed two times. First for walls (first
-    half of volumes) and then for cells.
+def move_to_box(infile, wfile, outfile, mvol):
+    """Moves periodic closed foam to periodic box.
+
+    Uses gmsh, specifically boolean operations and transformations from
+    OpenCASCADE. The result is unrolled to another geo file so that it can be
+    quickly read and worked with in the follow-up work. Operations are
+    performed two times. First for walls (first half of volumes) and then for
+    cells.
+
+    Save output to ``outfile``.
+
+    Args:
+        infile (str): input filename
+        wfile (str): working filename
+        outfile (str): output filename
+        mvol (int): number of volumes
     """
     with open(wfile, 'w') as wfl:
-        mvol = max(volumes)
         hvol = int(mvol / 2)
         wfl.write('SetFactory("OpenCASCADE");\n\n')
         wfl.write('Include "{0}";\n\n'.format(infile))
@@ -484,7 +584,22 @@ def move_to_box(infile, wfile, outfile, volumes):
 
 
 def create_walls(edat, wall_thickness=0.01):
-    """Creates walls."""
+    """Creates walls by shring each cell.
+
+    Each vertex is moved by toward the cell centroid as:
+
+    .. math::
+
+        v_n = v_o + w (c - v_o)
+
+    where :math:`v_n` is new vertex position, :math:`v_o` is old vertex
+    position, :math:`w` is the ``wall_thickness``, and :math:`c` is the
+    centroid position.
+
+    Args:
+        edat (dict): extracted geometry data
+        wall_thickness (float, optional): shrinking parameter
+    """
     volume_points = dict()  # point IDs for each volume
     for volume in edat['surface_loop']:
         volume_points[volume] = []
@@ -531,55 +646,39 @@ def create_walls(edat, wall_thickness=0.01):
     remove_duplicity(edat)
 
 
-def extract_center_cells(filename, number_of_cells):
-    """Extracts cells in the center from 27 times larger tessellated doamin."""
-    sdat = read_geo("{0}RVE27.geo".format(filename))
-    edat = extract_data(sdat)
-    edges = edat['line'].values()
-    faces = edat['line_loop'].values()
-    volumes = edat['surface_loop'].values()
-    #####################################################
-    max0 = list(range(0, number_of_cells))
-    for i in range(number_of_cells):
-        max0[i] = max(volumes[i])
-    max_index_of_faces = max(max0)
-    max1 = list(range(0, max_index_of_faces))
-    for i in range(max_index_of_faces):
-        max1[i] = max(faces[i])
-    max_index_of_edges = max(max1)
-    max2 = list(range(0, max_index_of_edges))
-    for i in range(max_index_of_edges):
-        max2[i] = max(edges[i])
-    max_index_of_nodes = max(max2)
-    ####################################################
-    # Making GEO file containing Periodic RVE
-    sdat['point'] = sdat['point'][:max_index_of_nodes]
-    sdat['line'] = sdat['line'][:max_index_of_edges]
-    sdat['line_loop'] = sdat['line_loop'][:max_index_of_faces]
-    sdat['surface'] = sdat['surface'][:max_index_of_faces]
-    sdat['physical_surface'] = sdat['physical_surface'][:max_index_of_faces]
-    sdat['surface_loop'] = sdat['surface_loop'][:number_of_cells]
-    sdat['volume'] = sdat['volume'][:number_of_cells]
-    save_geo(
-        "{0}.geo".format(filename),
-        sdat,
-        opencascade=False
-    )
-
-
 def restore_sizing(edat):
-    """Add sizing info to all points."""
+    """Add sizing info to all points.
+
+    Adds fourth argument called "psize" to each point.
+
+    Args:
+        edat (dict): extracted geometry data
+    """
     for ind in edat['point'].keys():
         edat['point'][ind] = list(edat['point'][ind]) + ['psize']
 
 
-def prep_mesh_config(filename, sizing, char_length=0.1):
-    """Create file specifying mesh parameters."""
-    sdat = read_geo(filename + "Morphology.geo")
+def prep_mesh_config(fname, sizing, char_length=0.1):
+    """Create file specifying meshing parameters.
+
+    Creates ``*UMesh.geo``. File will import ``*Morphology.geo``.
+
+    Sizing specified at points, edges and cells and implemented through
+    thresholds.
+
+    Additional info about gmsh mesh sizing `here
+    <http://gmsh.info/doc/texinfo/gmsh.html#Specifying-mesh-element-sizes>`_.
+
+    Args:
+        fname (str): base filename
+        sizing (list): mesh size near points, edges and in cells
+        char_length (float, optional): gmsh Mesh.CharacteristicLengthMax
+    """
+    sdat = read_geo(fname + "Morphology.geo")
     edat = extract_data(sdat)
     edges = r'{' + ','.join(str(x) for x in edat['line'].keys()) + r'}'
-    with open(filename + 'UMesh.geo', "w") as fhl:
-        fhl.write('Include "{}Morphology.geo";\n'.format(filename))
+    with open(fname + 'UMesh.geo', "w") as fhl:
+        fhl.write('Include "{}Morphology.geo";\n'.format(fname))
         fhl.write('Mesh.CharacteristicLengthMax = {0};\n'.format(char_length))
         fhl.write('psize = {0};\n'.format(sizing[0]))
         fhl.write('esize = {0};\n'.format(sizing[1]))
