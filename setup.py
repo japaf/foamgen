@@ -16,7 +16,7 @@ ON_RTD = os.environ.get('READTHEDOCS') == 'True'
 
 def long_desc():
     """Create long description."""
-    with open("README.md", "r") as fhl:
+    with open("README.rst", "r") as fhl:
         long_description = fhl.read()
     return long_description
 
