@@ -11,7 +11,7 @@ generation of both structured (uniform grid) and unstructured meshes.
 Documentation
 -------------
 
-Hosted online on [Read the Docs](https://foamgen.rtfd.io).
+Hosted online on `Read the Docs <https://foamgen.rtfd.io>`_.
 
 .. |docs| image:: https://readthedocs.org/projects/foamgen/badge/?version=latest
     :target: https://foamgen.readthedocs.io/en/latest/?badge=latest
