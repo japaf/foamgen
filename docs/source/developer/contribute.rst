@@ -1,7 +1,7 @@
 Contributing
 ============
 
-Contributions are most welcome and can be in the form of feedback, code or
+Contributions are most welcome and can be in the form of feedback, code, or
 documentation.
 
 Roadmap
