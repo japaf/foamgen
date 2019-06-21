@@ -11,6 +11,9 @@ from distutils.version import LooseVersion
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 
+ON_RTD = os.environ.get('READTHEDOCS') == 'True'
+
+
 def long_desc():
     """Create long description."""
     with open("README.md", "r") as fhl:
@@ -104,6 +107,11 @@ class CMakeBuild(build_ext):
         copymode(src_file, dest_file)
 
 
+if ON_RTD:
+    EXT_MODULES = []
+else:
+    EXT_MODULES = [CMakeExtension('foamgen/foamgen')]
+
 setup(
     name="foamgen",
     version="0.1.0",
@@ -116,7 +124,7 @@ setup(
     url="https://github.com/japaf/foamgen",
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    ext_modules=[CMakeExtension('foamgen/foamgen')],
+    ext_modules=EXT_MODULES,
     cmdclass=dict(build_ext=CMakeBuild),
     scripts=[os.path.join('scripts', 'foamreconstr')],
     entry_points={
