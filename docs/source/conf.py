@@ -49,6 +49,10 @@ autodoc_default_options = {
     'show-inheritance': True,
 }
 
+# don't import these modules for building the documentation
+autodoc_mock_imports = ['vapory', 'yamlargparse',
+                        'blessings', 'spack', 'vtk', 'gmsh-sdk']
+
 #Generate autosummary files
 autosummary_generate = True  # Make _autosummary files and include them
 
