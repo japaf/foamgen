@@ -44,7 +44,7 @@ def stl_to_periodic_box(fin, fout, mins, sizes, render):
 
     Args:
         fin (str): filename of foam with all closed cells
-        fout (str): file name of foam fully inside the box
+        fout (str): filename of foam fully inside the box
         mins (list): origin coordinates
         sizes (list): box sizes
         render (bool): render scene if True

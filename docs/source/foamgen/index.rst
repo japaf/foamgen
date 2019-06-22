@@ -9,4 +9,6 @@ Source Code Documentation
     foamgen.tessellation
     foamgen.morphology
     foamgen.umesh
+    foamgen.smesh
     foamgen.geo_tools
+    foamgen.vtk_tools

@@ -1,4 +1,10 @@
-"""@author: pavel.ferkl@gmail.com"""
+"""
+Structured meshing module
+=========================
+:synopsis: Create structured VTK mesh.
+
+.. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
+"""
 from __future__ import division, print_function
 import os
 import shutil
