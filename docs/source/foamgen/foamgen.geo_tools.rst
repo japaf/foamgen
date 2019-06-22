@@ -3,15 +3,16 @@ foamgen.geo\_tools
 
 .. automodule:: foamgen.geo_tools
 
-
-
+   
+   
    .. rubric:: Functions
 
    .. autosummary::
-
+   
       collect_strings
       create_walls
       extract_data
+      findall_top
       fix_strings
       identify_duplicity
       move_to_box
@@ -26,12 +27,13 @@ foamgen.geo\_tools
       save_geo
       split_loops
       surfaces_in_plane
+   
+   
 
+   
+   
+   
 
-
-
-
-
-
-
-
+   
+   
+   
