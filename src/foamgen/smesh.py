@@ -81,52 +81,60 @@ def cartesian_mesh(fname, dsize, porosity, strut_content):
                                    origin, spacing)
     else:
         print("Optimizing porosity and strut content")
-        res = root_scalar(porfsOpt, args=(fname, porosity), x0=100, x1=120,
-                          method='secant', rtol=1e-2)
+        res = root_scalar(por_fs_res,
+                          args=(fname, dsize, porosity, strut_content),
+                          x0=100, x1=120, method='secant', rtol=1e-2)
         delta = int(res.root)
         print('box size: {0:d}'.format(delta))
         print("Creating and saving optimal foam")
-        if os.path.isfile(fname + 'Box.vtk'):
-            os.remove(fname + 'Box.vtk')
-        if not os.path.isfile(fname + 'Box.ply'):
-            raise SystemError(".ply file is missing. Nothing to binarize.")
-        os.system(
-            "binvox -e -d {0:d}".format(vx) + " -rotz -rotx -rotz -rotz "
-            + "-t vtk " + fname + "Box.ply >binvox.out"
+        if os.path.isfile(fname + 'SMesh.vtk'):
+            os.remove(fname + 'SMesh.vtk')
+        if not os.path.isfile(fname + 'Morphology.stl'):
+            raise Exception(".stl file is missing. Nothing to binarize.")
+        shutil.copy2(fname + 'Morphology.stl', fname + 'SMesh.stl')
+        cmd = shlex.split(
+            "binvox -e -d {0:d} -t vtk ".format(delta) + fname + "SMesh.stl"
         )
-        origin = [dx, dy, dz]
-        spacing = [dx / vx, dy / vy, dz / vz]
-        vtkconv.main(fname + "Box.vtk", fname +
-                     "Box-ascii.vtk", origin, spacing)
-        f = open("foamreconstr.in", "w")
-        f.write("0\n")
-        f.write("1\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("1\n")
-        f.write("0\n")
-        f.write("{0:f}\n".format(DEDGE))
-        f.write("{0:f}\n".format(1 - strut_content * (1 - porosity)))
-        f.write("0\n")
-        f.write("1\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("0\n")
-        f.write("1\n")
-        f.write("0\n")
-        f.write("1\n")
-        f.write("0\n")
-        f.write(fname + "_str\n")
-        f.write(fname + "Box-ascii.vtk\n")
-        f.write(fname + ".gnu\n")
-        f.write("name\n")
-        f.write("descriptors.txt" + "\n")
-        f.write("parameters.txt" + "\n")
-        f.close()
-        os.system("./foamreconstr/foamreconstr")
+        sp.Popen(cmd).wait()
+        if os.path.isfile(fname + 'SMesh.stl'):
+            os.unlink(fname + 'SMesh.stl')
+        origin = [0, 0, 0]
+        spacing = [dsize / delta, dsize / delta, dsize / delta]
+        vtk_tools.vtk_bin_to_ascii(fname + "SMesh.vtk", fname + "SMesh.vtk",
+                                   origin, spacing)
+        try:
+            with open("parameters.txt", "r") as fhl:
+                dedge = float(fhl.readline())
+        except FileNotFoundError:
+            dedge = 2
+        with open("foamreconstr.in", "w") as fhl:
+            fhl.write("0\n")
+            fhl.write("1\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("1\n")
+            fhl.write("0\n")
+            fhl.write("{0:f}\n".format(dedge))
+            fhl.write("{0:f}\n".format(1 - strut_content * (1 - porosity)))
+            fhl.write("0\n")
+            fhl.write("1\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("0\n")
+            fhl.write("1\n")
+            fhl.write("0\n")
+            fhl.write("1\n")
+            fhl.write("0\n")
+            fhl.write(fname + "SMesh\n")
+            fhl.write(fname + "SMesh.vtk\n")
+            fhl.write(fname + "Tessellation.gnu\n")
+            fhl.write("name\n")
+            fhl.write("descriptors.txt" + "\n")
+            fhl.write("parameters.txt" + "\n")
+        sp.Popen("foamreconstr").wait()
 
 
 def por_res(delta, fname, porosity):
@@ -138,6 +146,8 @@ def por_res(delta, fname, porosity):
     ``binvox`` is used for binarization of the morphology.
 
     Box size can in fact only be integer (amount of voxels).
+
+    Requires ``*Morphology.stl`` file. Creates ``*SMesh.vtk`` file.
 
     Args:
         delta (float): box size
@@ -171,71 +181,65 @@ def por_res(delta, fname, porosity):
     return (eps - porosity)**2
 
 
-def porfsOpt(x):
+def por_fs_res(delta, fname, dsize, porosity, strut_content):
     """Objective function.
 
     For finding size of box, which would give desired porosity and
     strut content.
     @param[in] x Box size
     """
-    global DEDGE
-    filename = INPUTS["filename"]
-    porosity = INPUTS["structured_grid_options"]["porosity"]
-    strut_content = INPUTS["structured_grid_options"]["strut_content"]
-    vx = int(x)
-    vy = vx
-    vz = vx
-    if os.path.isfile(filename + 'Box.vtk'):
-        os.remove(filename + 'Box.vtk')
-    if not os.path.isfile(filename + 'Box.ply'):
-        raise SystemError(".ply file is missing. Nothing to binarize.")
-    os.system(
-        "binvox -e -d {0:d} -rotz -rotx -rotz -rotz -t vtk ".format(vx)
-        + filename + "Box.ply >binvox.out"
+    delta = int(delta)
+    if os.path.isfile(fname + 'SMesh.vtk'):
+        os.remove(fname + 'SMesh.vtk')
+    if not os.path.isfile(fname + 'Morphology.stl'):
+        raise Exception(".stl file is missing. Nothing to binarize.")
+    shutil.copy2(fname + 'Morphology.stl', fname + 'SMesh.stl')
+    cmd = shlex.split(
+        "binvox -e -d {0:d} -t vtk ".format(delta) + fname + "SMesh.stl"
     )
-    filenameIn = filename + "Box.vtk"
-    filenameOut = filename + "Box-ascii.vtk"
-    dx = dy = dz = cfg.smesh.dsize
-    origin = [dx, dy, dz]
-    spacing = [dx / vx, dy / vy, dz / vz]
-    vtkconv.main(filenameIn, filenameOut, origin, spacing)
-    f = open("foamreconstr.in", "w")
-    f.write("0\n")
-    f.write("1\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("{0:f}\n".format(DEDGE))
-    f.write("{0:f}\n".format(1 - strut_content * (1 - porosity)))
-    f.write("0\n")
-    f.write("1\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("0\n")
-    f.write("1\n")
-    f.write("0\n")
-    f.write("1\n")
-    f.write("0\n")
-    f.write(filename + "Box_structured\n")
-    f.write(filename + "Box-ascii.vtk\n")
-    f.write(filename + ".gnu\n")
-    f.write("name\n")
-    f.write("descriptors.txt" + "\n")
-    f.write("parameters.txt" + "\n")
-    f.close()
-    os.system("./foamreconstr/foamreconstr")
-    f = open("descriptors.txt", "r")
-    eps = float(f.readline())
-    fs = float(f.readline())
-    f.close()
-    f = open("parameters.txt", "r")
-    DEDGE = float(f.readline())
-    f.close()
-    resid = ((eps - porosity) / porosity)**2
+    sp.Popen(cmd).wait()
+    if os.path.isfile(fname + 'SMesh.stl'):
+        os.unlink(fname + 'SMesh.stl')
+    origin = [0, 0, 0]
+    spacing = [dsize / delta, dsize / delta, dsize / delta]
+    vtk_tools.vtk_bin_to_ascii(fname + "SMesh.vtk", fname + "SMesh.vtk",
+                               origin, spacing)
+    try:
+        with open("parameters.txt", "r") as fhl:
+            dedge = float(fhl.readline())
+    except FileNotFoundError:
+        dedge = 2
+    with open("foamreconstr.in", "w") as fhl:
+        fhl.write("0\n")
+        fhl.write("1\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("{0:f}\n".format(dedge))
+        fhl.write("{0:f}\n".format(1 - strut_content * (1 - porosity)))
+        fhl.write("0\n")
+        fhl.write("1\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("0\n")
+        fhl.write("1\n")
+        fhl.write("0\n")
+        fhl.write("1\n")
+        fhl.write("0\n")
+        fhl.write(fname + "SMesh\n")
+        fhl.write(fname + "SMesh.vtk\n")
+        fhl.write(fname + "Tessellation.gnu\n")
+        fhl.write("name\n")
+        fhl.write("descriptors.txt" + "\n")
+        fhl.write("parameters.txt" + "\n")
+    sp.Popen("foamreconstr").wait()
+    with open("descriptors.txt", "r") as fhl:
+        eps = float(fhl.readline())
+        fstr = float(fhl.readline())
     print("dimension: {0:4d}, porosity: {1:f}".format(
-        vx, eps) + ", strut content: {0:f}".format(fs))
-    return resid
+        delta, eps) + ", strut content: {0:f}".format(fstr))
+    return (eps - porosity)**2
