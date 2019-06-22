@@ -11,9 +11,10 @@ import subprocess as sp
 import shlex as sx
 import pandas as pd
 from .geo_tools import read_geo, extract_data
+from . import vtk_tools
 
 
-def tessellate(fname, visualize, clean, gnuplot=True):
+def tessellate(fname, visualize, clean):
     """Use Laguerre tessellation to create dry foam.
 
     Uses `Neper <http://neper.sourceforge.net/>`_ for tessellation.
@@ -23,14 +24,13 @@ def tessellate(fname, visualize, clean, gnuplot=True):
         fname (str): base filename
         visualize (bool): create picture of tessellation if True
         clean (bool): delete redundant files if True
-        gnuplot (bool, optional): save tessellation in gnuplot format if True
     """
     number_of_cells = prep(fname)
     neper_tessellation(fname, number_of_cells)
+    periodic_box(fname, 1, False)
+    save_gnuplot(fname)
     if visualize:
         neper_visualize(fname)
-    if gnuplot:
-        save_gnuplot(fname)
     if clean:
         clean_files()
 
@@ -110,6 +110,36 @@ def save_gnuplot(fname):
                 point[pidx[0]][0], point[pidx[0]][1], point[pidx[0]][2]))
             flp.write('{0} {1} {2}\n\n\n'.format(
                 point[pidx[1]][0], point[pidx[1]][1], point[pidx[1]][2]))
+
+
+def periodic_box(fname, dsize, render):
+    """Uses gmsh and vtk to move closed foam to periodic box.
+
+    Requires ``*Tessellation.geo`` file. Creates ``*TessellationBox.stl`` file.
+
+    Args:
+        fname (str): base filename
+        dsize (float): box size
+        render (bool): render scene if True
+    """
+    geo_to_stl(fname + "Tessellation.geo")
+    vtk_tools.stl_to_periodic_box(
+        fname + "Tessellation.stl", fname + "TessellationBox.stl", [0, 0, 0],
+        [dsize, dsize, dsize], render
+    )
+
+
+def geo_to_stl(fin):
+    """Convert ``*.geo`` file to ``*.stl`` file
+
+    Uses ``gmsh``.
+
+    Args:
+        fin (str): input filename
+    """
+    print("Converting .geo to .stl")
+    cmd = sx.split("gmsh -n -2 -v 3 -format stl " + fin)
+    sp.Popen(cmd).wait()
 
 
 def clean_files():

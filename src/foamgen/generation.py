@@ -74,10 +74,6 @@ def parse():
                      help='convert mesh to *.xml for fenics')
     prs.add_argument('-s', '--smesh.active', default=False,
                      action='store_true', help='create structured mesh')
-    prs.add_argument('--smesh.dsize', default=1, type=float,
-                     help='domain size')
-    prs.add_argument('--smesh.render', default=False,
-                     action='store_true', help='visualize structured mesh')
     prs.add_argument('--smesh.strut', default=0.6, type=float,
                      help='strut content')
     prs.add_argument('--smesh.por', default=0.94, type=float,
@@ -133,9 +129,7 @@ def generate(cfg):
     if cfg.smesh.active:
         print(term.yellow + "Creating structured mesh." + term.normal)
         smesh.structured_mesh(cfg.filename,
-                              cfg.smesh.dsize,
                               cfg.smesh.por,
-                              cfg.smesh.strut,
-                              cfg.smesh.render)
+                              cfg.smesh.strut)
     time_end = datetime.datetime.now()
     print("Foam created in: {}".format(time_end - time_start))
