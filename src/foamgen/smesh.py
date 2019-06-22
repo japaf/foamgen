@@ -34,7 +34,7 @@ def periodic_box(fname, dsize, render):
     """
     geo_to_stl(fname + "Tessellation.geo")
     vtk_tools.stl_to_periodic_box(
-        fname + "Tessellation.stl", fname + "Morphology.ply", [0, 0, 0],
+        fname + "Tessellation.stl", fname + "Morphology.stl", [0, 0, 0],
         [dsize, dsize, dsize], render
     )
 
@@ -80,24 +80,12 @@ def cartesian_mesh(fname, dsize, porosity, strut_content):
         vtk_tools.vtk_bin_to_ascii(fname + "SMesh.vtk", fname + "SMesh.vtk",
                                    origin, spacing)
     else:
-        print(
-            term.yellow +
-            "Optimizing porosity and strut content" +
-            term.normal
-        )
-        res = minimize_scalar(
-            porfsOpt, bracket=[150, 200], method='Brent', tol=1e-2
-        )
-        # res=minimize_scalar(
-        #     porfsOpt,bounds=[200,250],method='bounded',tol=2e0
-        # )
-        vx = vy = vz = int(res.x)
-        print('optimal box size: {0:d}'.format(vx))
-        print(
-            term.yellow +
-            "Creating and saving optimal foam" +
-            term.normal
-        )
+        print("Optimizing porosity and strut content")
+        res = root_scalar(porfsOpt, args=(fname, porosity), x0=100, x1=120,
+                          method='secant', rtol=1e-2)
+        delta = int(res.root)
+        print('box size: {0:d}'.format(delta))
+        print("Creating and saving optimal foam")
         if os.path.isfile(fname + 'Box.vtk'):
             os.remove(fname + 'Box.vtk')
         if not os.path.isfile(fname + 'Box.ply'):
@@ -162,21 +150,17 @@ def por_res(delta, fname, porosity):
     delta = int(delta)
     if os.path.isfile(fname + 'SMesh.vtk'):
         os.remove(fname + 'SMesh.vtk')
-    if not os.path.isfile(fname + 'Morphology.ply'):
-        raise Exception(".ply file is missing. Nothing to binarize.")
-    shutil.copy2(fname + 'Morphology.ply', fname + 'SMesh.ply')
+    if not os.path.isfile(fname + 'Morphology.stl'):
+        raise Exception(".stl file is missing. Nothing to binarize.")
+    shutil.copy2(fname + 'Morphology.stl', fname + 'SMesh.stl')
     cmd = shlex.split(
-        "binvox -e -d {0:d} -t vtk ".format(delta) + fname + "SMesh.ply"
+        "binvox -e -d {0:d} -t vtk ".format(delta) + fname + "SMesh.stl"
     )
-    # cmd = shlex.split(
-    #     "binvox -e -d {0:d} -rotz -rotx -rotz -rotz -t vtk ".format(delta)
-    #     + fname + "SMesh.ply"
-    # )
     call = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
     out, _ = call.communicate()
     out = out.decode().splitlines()
-    if os.path.isfile(fname + 'SMesh.ply'):
-        os.unlink(fname + 'SMesh.ply')
+    if os.path.isfile(fname + 'SMesh.stl'):
+        os.unlink(fname + 'SMesh.stl')
     for line in out:
         if "counted" in line:
             solid_voxel, total_voxel =\
