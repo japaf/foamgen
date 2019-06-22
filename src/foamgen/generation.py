@@ -132,11 +132,10 @@ def generate(cfg):
                                 cfg.umesh.convert)
     if cfg.smesh.active:
         print(term.yellow + "Creating structured mesh." + term.normal)
-        smesh.structured_grid(cfg.filename,
-                              cfg.smesh.dsize,
-                              cfg.smesh.dsize,
+        smesh.structured_mesh(cfg.filename,
                               cfg.smesh.dsize,
                               cfg.smesh.por,
-                              cfg.smesh.strut)
+                              cfg.smesh.strut,
+                              cfg.smesh.render)
     time_end = datetime.datetime.now()
     print("Foam created in: {}".format(time_end - time_start))
