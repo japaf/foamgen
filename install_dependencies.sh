@@ -46,12 +46,6 @@ voroplusplus () {
     rm -rf voro++-$VORO_VERSION
 }
 
-meshconv () {
-    wget http://www.patrickmin.com/meshconv/linux64/meshconv
-    chmod ug+x meshconv
-    sudo mv meshconv /usr/local/bin/meshconv
-}
-
 binvox () {
     wget http://www.patrickmin.com/binvox/linux64/binvox
     chmod ug+x binvox
@@ -66,6 +60,5 @@ apts |& tee apts.log
 packinggeneration |& tee packinggeneration.log
 neper |& tee neper.log
 voroplusplus |& tee voroplusplus.log
-meshconv |& tee meshconv.log
 binvox |& tee binvox.log
 gsl |& gsl.log

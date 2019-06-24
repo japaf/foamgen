@@ -14,8 +14,6 @@ Foamgen requires following programs and libraries:
   version 3.4.0 or above recommended
 * `Voro++ <http://math.lbl.gov/voro++/about.html>`_
   version 0.4.6 or above recommended
-* `meshconv <http://www.patrickmin.com/meshconv>`_
-  version 1.29 or above recommended
 * `binvox <http://www.patrickmin.com/binvox/>`_
   version 1.27 or above recommended
 * `GSL <http://www.gnu.org/software/gsl/>`_
