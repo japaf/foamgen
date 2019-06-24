@@ -133,7 +133,7 @@ setup(
         ],
     },
     install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',
-                      'blessings', 'spack', 'vtk', 'gmsh-sdk', 'Sphinx>2.1.1'],
+                      'blessings', 'spack', 'vtk', 'gmsh-sdk'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",
