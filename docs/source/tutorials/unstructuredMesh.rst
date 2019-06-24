@@ -1,7 +1,8 @@
 Unstructured meshing
 ====================
 
-The goal is to create an unstructured tetrahedral mesh for FEM calculations.
+The goal is to create an unstructured tetrahedral mesh for calculations of foam
+properties.
 
 Inputs
 ------
@@ -17,7 +18,7 @@ Default mesh can be created by running::
 
     foamgen -u
 
-This produces packing similar to this one:
+This produces mesh similar to this one:
 
 .. image:: ../_images/FoamUMesh.png
     :width: 100%
@@ -25,8 +26,8 @@ This produces packing similar to this one:
 Outputs
 -------
 
-By default the mesh is saved gmsh format (``*.msh``) and converted into
-dolfin/fenics format (``*.xml``).
+By default the mesh is saved gmsh format (``*UMehs.msh``) and converted into
+dolfin/fenics format (``*UMesh.xml`` and ``*UMesh_physical_region.xml``).
 
 
 Implementation
