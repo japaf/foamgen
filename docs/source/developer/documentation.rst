@@ -16,22 +16,31 @@ can be easily done using the following command::
     pip install sphinx sphinxcontrib-bibtex sphinx_rtd_theme
 
 
-Making the build
-----------------
+Creating HTML
+-------------
 
-To build the documentation, execute::
+To build the HTML documentation, execute::
 
     cd docs
     make html
 
-This should execute sphinx and the documentation should be generated in the
+This executes sphinx and the documentation will be generated in the
 docs/build directory. To open the documentation::
 
     open build/html/index.html
+
+Creating PDF
+------------
+
+To build the PDF documentation, execute::
+
+    make latexpdf
+
+This creates ``foamgen.pdf`` in build/latex directory.
 
 
 Documentation guidelines
 ------------------------
 
 `Google style <http://google.github.io/styleguide/pyguide.html>`_
-is followed in documentation of the source code.
+is followed in the documentation of the source code.
