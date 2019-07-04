@@ -23,3 +23,4 @@ License
 `MIT`_ © 2019 Pavel Ferkl
 
 .. _MIT: LICENSE
+
