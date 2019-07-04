@@ -33,5 +33,16 @@ The unstructured mesh workflow with default parameters can be run as::
 
     foamgen -ptmu
 
-**Note: Structured meshing is currently broken. Use only unstructured meshing
-workflow.**
+Importing package
+-----------------
+
+``foamgen`` can also be imported as a python module. For example, to create
+sphere packing, following code can be run::
+
+    import foamgen as fg
+    cfg = fg.generation.parse_config_file('basic.yml')
+    cfg.pack.active = True
+    fg.generation.generate(cfg)
+
+where ``basic.yml`` is a valid configurational file. Such file can be found in
+``examples`` directory.

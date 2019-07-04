@@ -10,7 +10,8 @@ foamgen.generation
    .. autosummary::
    
       generate
-      parse
+      parse_cli_and_generate
+      parse_config_file
    
    
 
