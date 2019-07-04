@@ -182,5 +182,6 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/c++,code,cmake,python
 
+tmp/
 src/foamgen/foamreconstr
 !docs/Makefile
