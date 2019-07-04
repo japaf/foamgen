@@ -1,16 +1,21 @@
 filename: Foam
 pack:
     active: no
-    ncells: 8
-    shape: 0.195909940771
-    scale: 0.216136876376
+    ncells: 27
+    shape: 0.2
+    scale: 0.35
     alg: fba
+    render: no
+    clean: yes
+    maxit: 5
 tess:
     active: no
     render: no
+    clean: yes
 morph:
     active: no
     dwall: 0.02
+    clean: yes
 umesh:
     active: no
     psize: 0.025
@@ -19,8 +24,6 @@ umesh:
     convert: yes
 smesh:
     active: no
-    render: no
-    dsize: 1
     strut: 0.5
     por: 0.95
     isstrut: 4

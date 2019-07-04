@@ -8,6 +8,8 @@ Generation module
 from __future__ import division, print_function
 import sys
 import datetime
+import yaml
+import munch
 import yamlargparse as yp
 from blessings import Terminal
 from . import packing
@@ -17,7 +19,7 @@ from . import umesh
 from . import smesh
 
 
-def parse():
+def parse_cli_and_generate():
     """Parse CLI arguments and call :func:`generate` function.
 
     Parsing is done using `yamlargparse
@@ -87,6 +89,26 @@ def parse():
                      help='transform structure to periodic box')
     cfg = prs.parse_args(sys.argv[1:])
     generate(cfg)
+
+
+def parse_config_file(fname):
+    """Parse configurational file.
+
+    Parsed options can be accessed as arguments of the returned object. For
+    more information see `Munch <https://github.com/Infinidat/munch>`_.
+
+    Args:
+        fname (str): config filename
+
+    Returns:
+        Munch: parsed config file
+    """
+    with open(fname, 'r') as stream:
+        try:
+            cfg = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+    return munch.munchify(cfg)
 
 
 def generate(cfg):

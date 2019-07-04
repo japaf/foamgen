@@ -129,11 +129,12 @@ setup(
     scripts=[os.path.join('scripts', 'foamreconstr')],
     entry_points={
         'console_scripts': [
-            'foamgen=foamgen.generation:parse',
+            'foamgen=foamgen.generation:parse_cli_and_generate',
         ],
     },
     install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',
-                      'blessings', 'spack', 'vtk', 'gmsh-sdk'],
+                      'blessings', 'spack', 'vtk', 'gmsh-sdk', 'PyYAML',
+                      'munch'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",
