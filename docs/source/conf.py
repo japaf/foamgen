@@ -50,7 +50,7 @@ autodoc_default_options = {
 }
 
 # don't import these modules for building the documentation
-autodoc_mock_imports = ['vapory', 'yamlargparse',
+autodoc_mock_imports = ['vapory', 'yamlargparse', 'pandas',
                         'blessings', 'spack', 'vtk', 'gmsh-sdk', 'PyYAML',
                         'munch']
 
