@@ -51,7 +51,8 @@ autodoc_default_options = {
 
 # don't import these modules for building the documentation
 autodoc_mock_imports = ['vapory', 'yamlargparse',
-                        'blessings', 'spack', 'vtk', 'gmsh-sdk']
+                        'blessings', 'spack', 'vtk', 'gmsh-sdk', 'PyYAML',
+                        'munch']
 
 #Generate autosummary files
 autosummary_generate = True  # Make _autosummary files and include them
