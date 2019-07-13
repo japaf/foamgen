@@ -134,7 +134,7 @@ setup(
     },
     install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',
                       'blessings', 'spack', 'vtk', 'gmsh-sdk', 'PyYAML',
-                      'munch'],
+                      'munch', 'pandas'],
     classifiers=[
         "Intended Audience :: Science/Research",
         "Development Status :: 2 - Pre-Alpha",
