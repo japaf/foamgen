@@ -6,6 +6,7 @@ GMSH CAD support module
 .. moduleauthor:: Pavel Ferkl <pavel.ferkl@gmail.com>
 """
 from __future__ import print_function, division
+import os
 import re
 import shutil
 import subprocess as sp
@@ -132,6 +133,44 @@ def save_geo(geo_file, sdat, opencascade=True):
             if key in sdat:
                 for line in sdat[key]:
                     fhl.write("{}\n".format(line))
+
+
+def geo2brep(geo_file, brep_file):
+    """Convert ``gmsh`` CAD geometry to BREP format.
+
+    ``gmsh`` is used for the conversion. A temporary file ``geo2brep.geo`` is
+    created (overwrites existing file if it exists).
+
+    Args:
+        geo_file (str): input filename
+        brep_file (str): output filename
+    """
+    wfile = 'geo2brep.geo'
+    with open(wfile, "w") as fhl:
+        fhl.write('SetFactory("OpenCASCADE");\n')
+        fhl.write('Merge "{}";\n'.format(geo_file))
+        fhl.write('Save "{}";\n'.format(brep_file))
+    sp.Popen(['gmsh', wfile, '-parse_and_exit']).wait()
+    os.remove(wfile)
+
+
+def brep2geo(brep_file, geo_file):
+    """Convert BREP CAD geometry to ``gmsh`` native format.
+
+    ``gmsh`` is used for the conversion. A temporary file ``brep2geo.geo`` is
+    created (overwrites existing file if it exists).
+
+    Args:
+        brep_file (str): input filename
+        geo_file (str): output filename
+    """
+    wfile = 'brep2geo.geo'
+    with open(wfile, "w") as fhl:
+        fhl.write('SetFactory("OpenCASCADE");\n')
+        fhl.write('Merge "{}";\n'.format(brep_file))
+    sp.Popen(['gmsh', wfile, '-0']).wait()
+    shutil.move(wfile + '_unrolled', geo_file)
+    os.remove(wfile)
 
 
 def extract_data(sdat):

@@ -10,6 +10,15 @@ import os
 import shutil
 import numpy as np
 from blessings import Terminal
+from OCC.Core.gp import gp_Pnt, gp_Vec, gp_Trsf
+from OCC.Core.BRep import BRep_Builder
+from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Cut, BRepAlgoAPI_Common
+from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_Transform
+from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
+from OCC.Core.BRepTools import breptools_Read, breptools_Write
+from OCC.Core.TopoDS import TopoDS_Shape, TopoDS_Compound
+from OCC.Display.SimpleGui import init_display
+from OCC.Extend.TopologyUtils import TopologyExplorer
 from . import geo_tools as gt
 
 
@@ -97,11 +106,20 @@ def to_box(iname, oname, ncells, verbose):
         ncells (int): number of cells
         verbose (bool): print additional info to stdout if True
     """
-    tname = 'temp.geo'
+    # tname = 'temp.geo'
+    # # move foam to a periodic box and save it to a file
+    # gt.move_to_box(iname, "move_to_box.geo", tname, ncells)
+    # convert to BREP
+    tname1 = "temp.brep"
+    gt.geo2brep(iname, tname1)
     # move foam to a periodic box and save it to a file
-    gt.move_to_box(iname, "move_to_box.geo", tname, ncells)
+    tname2 = "temp.brep"
+    move_to_box2(tname1, tname2, False)
+    # convert to geo
+    tname3 = "temp.geo"
+    gt.brep2geo(tname2, tname3)
     # read boxed foam
-    sdat = gt.read_geo(tname)  # string data
+    sdat = gt.read_geo(tname3)  # string data
     edat = gt.extract_data(sdat)  # extracted data
     # duplicity of points, lines, etc. was created during moving to a box
     gt.remove_duplicity(edat)
@@ -141,11 +159,110 @@ def to_box(iname, oname, ncells, verbose):
     gt.save_geo(oname, sdat)
 
 
+def translate_topods_from_vector(brep, vec, copy=False):
+    """Translate a brep over a vector.
+
+    Args:
+        brep (BRep): the Topo_DS to translate
+        vec (gp_Vec): the vector defining the translation
+        copy (bool): copies to brep if True
+    """
+    trns = gp_Trsf()
+    trns.SetTranslation(vec)
+    brep_trns = BRepBuilderAPI_Transform(brep, trns, copy)
+    brep_trns.Build()
+    return brep_trns.Shape()
+
+
+def slice_and_move(obj, box, vec):
+    """Cut, move, and join and object
+
+    One object is cut by another object. Sliced part is moved by a vector.
+    Moved part is joined with non-moved part.
+
+    Args:
+        obj (Solid): object to be cut
+        box (Solid): object used for cutting
+        vec (gp_Vec): vector defining the offset
+    """
+    print('Solids before slicing: {}'.format(len(obj)))
+    newsol = []
+    for solid in obj:
+        cut = BRepAlgoAPI_Cut(solid, box).Shape()
+        comm = BRepAlgoAPI_Common(solid, box).Shape()
+        comm = translate_topods_from_vector(comm, vec)
+        newsol.append(cut)
+        texp = TopologyExplorer(comm)
+        if list(texp.solids()):
+            newsol.append(comm)
+    print('Solids after slicing: {}'.format(len(newsol)))
+    return newsol
+
+
+def create_compound(obj, compound, builder):
+    """Add objects to compound using builder.
+
+    Args:
+        obj (list): list of objects to be added to compound
+        compound (obj): the compound
+        builder (obj): BREP builder
+    """
+    for solid in obj:
+        builder.Add(compound, solid)
+
+
+def move_to_box2(iname, oname, visualize=False):
+    """Move foam to periodic box.
+
+    Remove point duplicity, restore OpenCASCADE compatibility, define periodic
+    and physical surfaces.
+
+    Args:
+        iname (str): input filename
+        oname (str): output filename
+        visualize (bool): show picture of foam morphology in box if True
+    """
+    foam = TopoDS_Shape()
+    builder = BRep_Builder()
+    breptools_Read(foam, iname, builder)
+    texp = TopologyExplorer(foam)
+    solids = list(texp.solids())
+
+    foam = TopoDS_Compound()
+    builder.MakeCompound(foam)
+
+    box = BRepPrimAPI_MakeBox(gp_Pnt(1, -1, -1), 3, 3, 3).Shape()
+    vec = gp_Vec(-1, 0, 0)
+    solids = slice_and_move(solids, box, vec)
+    box = BRepPrimAPI_MakeBox(gp_Pnt(-3, -1, -1), 3, 3, 3).Shape()
+    vec = gp_Vec(1, 0, 0)
+    solids = slice_and_move(solids, box, vec)
+    box = BRepPrimAPI_MakeBox(gp_Pnt(-1, 1, -1), 3, 3, 3).Shape()
+    vec = gp_Vec(0, -1, 0)
+    solids = slice_and_move(solids, box, vec)
+    box = BRepPrimAPI_MakeBox(gp_Pnt(-1, -3, -1), 3, 3, 3).Shape()
+    vec = gp_Vec(0, 1, 0)
+    solids = slice_and_move(solids, box, vec)
+    box = BRepPrimAPI_MakeBox(gp_Pnt(-1, -1, 1), 3, 3, 3).Shape()
+    vec = gp_Vec(0, 0, -1)
+    solids = slice_and_move(solids, box, vec)
+    box = BRepPrimAPI_MakeBox(gp_Pnt(-1, -1, -3), 3, 3, 3).Shape()
+    vec = gp_Vec(0, 0, 1)
+    solids = slice_and_move(solids, box, vec)
+    create_compound(solids, foam, builder)
+    breptools_Write(foam, oname)
+    if visualize:
+        display, start_display, add_menu, add_function_to_menu = init_display()
+        display.DisplayShape(foam, update=True)
+        start_display()
+
+
 def clean_files():
     """Delete unnecessary files."""
     flist = [
         'move_to_box.geo',
         'temp.geo',
+        'temp.brep',
     ]
     for fil in flist:
         if os.path.exists(fil):
