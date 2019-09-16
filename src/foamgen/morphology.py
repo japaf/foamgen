@@ -7,6 +7,7 @@ Morphology module
 """
 from __future__ import print_function
 import os
+import time
 import shutil
 import numpy as np
 from blessings import Terminal
@@ -40,21 +41,33 @@ def make_walls(fname, wall_thickness, clean, verbose):
     term = Terminal()
     # create walls
     iname = fname + "Tessellation.geo"
-    oname = fname + "Walls.geo"
+    cname = fname + "Cells.geo"
+    wname = fname + "Walls.geo"
     print(
         term.yellow
         + "Starting from file {}.".format(iname)
         + term.normal
     )
-    ncells = add_walls(iname, oname, wall_thickness)
+    print(time.asctime(), 'start')
+    ncells = add_walls(iname, cname, wname, wall_thickness)
     # move foam to a periodic box and save it to a file
-    iname = oname
-    oname = fname + "WallsBox.geo"
-    to_box(iname, oname, ncells, verbose)
-    # overwrite morphology file
-    iname = oname
+    iname = cname
+    # cname = fname + "CellsBox.geo"
+    # wname = fname + "WallsBox.geo"
+    cname = fname + "CellsBox.brep"
+    wname = fname + "WallsBox.brep"
+    to_box(iname, cname, wname, ncells, verbose)
     oname = fname + "Morphology.geo"
-    shutil.copy2(iname, oname)
+    gt.merge_and_label_geo([cname, wname], oname)
+    # exit()
+    # finalize_geo(cname, cname, verbose)
+    # finalize_geo(wname, wname, verbose)
+    # iname = wname
+    # to_box(iname, oname, ncells, verbose)
+    # # overwrite morphology file
+    # iname = oname
+    # oname = fname + "Morphology.geo"
+    # shutil.copy2(iname, oname)
     # delete redundant files
     if clean:
         clean_files()
@@ -65,14 +78,15 @@ def make_walls(fname, wall_thickness, clean, verbose):
     )
 
 
-def add_walls(iname, oname, wall_thickness):
+def add_walls(iname, cname, wname, wall_thickness):
     """Create walls by shrinking each cell.
 
     Uses files in gmsh CAD format.
 
     Args:
         iname (str): input filename
-        oname (str): output filename
+        cname (str): output filename with cells
+        wname (str): output filename with walls
         wall_thickness (float): wall thickness parameter
 
     Returns:
@@ -87,14 +101,16 @@ def add_walls(iname, oname, wall_thickness):
     gt.fix_strings(sdat['surface_loop'])
     # create walls
     edat = gt.extract_data(sdat)
-    gt.create_walls(edat, wall_thickness)
-    sdat = gt.collect_strings(edat)
-    gt.save_geo(oname, sdat)
+    cedat, wedat = gt.create_walls(edat, wall_thickness)
+    sdat = gt.collect_strings(cedat)
+    gt.save_geo(cname, sdat)
+    sdat = gt.collect_strings(wedat)
+    gt.save_geo(wname, sdat)
     ncells = len(sdat['volume'])
     return ncells
 
 
-def to_box(iname, oname, ncells, verbose):
+def to_box(iname, cname, wname, ncells, verbose, method='pythonocc'):
     """Move foam to periodic box.
 
     Remove point duplicity, restore OpenCASCADE compatibility, define periodic
@@ -102,30 +118,52 @@ def to_box(iname, oname, ncells, verbose):
 
     Args:
         iname (str): input filename
-        oname (str): output filename
+        cname (str): output filename with cells
+        wname (str): output filename with walls
         ncells (int): number of cells
         verbose (bool): print additional info to stdout if True
+        method (str): gmsh or pythonocc (default)
     """
-    # tname = 'temp.geo'
-    # # move foam to a periodic box and save it to a file
-    # gt.move_to_box(iname, "move_to_box.geo", tname, ncells)
-    # convert to BREP
-    tname1 = "temp.brep"
-    gt.geo2brep(iname, tname1)
-    # move foam to a periodic box and save it to a file
-    tname2 = "temp.brep"
-    move_to_box2(tname1, tname2, False)
-    # convert to geo
-    tname3 = "temp.geo"
-    gt.brep2geo(tname2, tname3)
+    print(time.asctime(), 'to_box')
+    if method == 'gmsh':
+        # oname = 'temp.geo'
+        # move foam to a periodic box and save it to a file
+        gt.move_to_box(iname, "move_to_box.geo", oname, ncells)
+    elif method == 'pythonocc':
+        # convert to BREP
+        tname1 = "temp.brep"
+        gt.geo2brep(iname, tname1)
+        # move foam to a periodic box and save it to a file
+        # tname2 = "FoamCellsBox.brep"
+        # tname3 = "FoamWallsBox.brep"
+        move_to_box(tname1, cname, wname, False)
+        # convert to geo
+        # oname = "temp.geo"
+        # gt.label_geo(tname2, cname, 1)
+        # gt.label_geo(tname3, wname, 2)
+        # gt.brep2geo(tname2, cname)
+        # gt.brep2geo(tname3, wname)
+    else:
+        raise Exception('Only gmsh and pythonocc methods implemented.')
+    print(time.asctime(), 'boxed')
+
+
+def finalize_geo(iname, oname, verbose, method='pythonocc'):
+    """Define periodic surfaces and physical volumes.
+
+    Also remove point duplicity and restore OpenCASCADE compatibility.
+    """
     # read boxed foam
-    sdat = gt.read_geo(tname3)  # string data
+    sdat = gt.read_geo(iname)  # string data
     edat = gt.extract_data(sdat)  # extracted data
+    print(time.asctime(), 'read')
     # duplicity of points, lines, etc. was created during moving to a box
     gt.remove_duplicity(edat)
+    print(time.asctime(), 'duplicity')
     # restore OpenCASCADE compatibility
-    gt.split_loops(edat, 'line_loop')
-    gt.split_loops(edat, 'surface_loop')
+    gt.split_loops2(edat, 'line_loop')
+    gt.split_loops2(edat, 'surface_loop')
+    print(time.asctime(), 'compatibility')
     # identification of physical surfaces for boundary conditions
     surf0 = gt.surfaces_in_plane(edat, 0.0, 2)
     if verbose:
@@ -153,10 +191,15 @@ def to_box(iname, oname, ncells, verbose):
         print(
             'surface IDs periodic in Y: {}'.format(edat['periodic_surface_Y'])
         )
+    print(time.asctime(), 'periodicity')
+    if method == 'pythonocc':
+        edat['physical_volume'] = {'1': edat['volume'].keys()}
     # restore_sizing(edat)
     # save the final foam
     sdat = gt.collect_strings(edat)
+    print(time.asctime(), 'collection')
     gt.save_geo(oname, sdat)
+    print(time.asctime(), 'saved')
 
 
 def translate_topods_from_vector(brep, vec, copy=False):
@@ -211,25 +254,25 @@ def create_compound(obj, compound, builder):
         builder.Add(compound, solid)
 
 
-def move_to_box2(iname, oname, visualize=False):
+def move_to_box(iname, cname, wname, visualize=False):
     """Move foam to periodic box.
 
-    Remove point duplicity, restore OpenCASCADE compatibility, define periodic
-    and physical surfaces.
+    Works on BREP files. Information about physical volumes is lost.
 
     Args:
         iname (str): input filename
-        oname (str): output filename
+        cname (str): output filename with cells
+        wname (str): output filename with walls
         visualize (bool): show picture of foam morphology in box if True
     """
-    foam = TopoDS_Shape()
+    cells = TopoDS_Shape()
     builder = BRep_Builder()
-    breptools_Read(foam, iname, builder)
-    texp = TopologyExplorer(foam)
+    breptools_Read(cells, iname, builder)
+    texp = TopologyExplorer(cells)
     solids = list(texp.solids())
 
-    foam = TopoDS_Compound()
-    builder.MakeCompound(foam)
+    cells = TopoDS_Compound()
+    builder.MakeCompound(cells)
 
     box = BRepPrimAPI_MakeBox(gp_Pnt(1, -1, -1), 3, 3, 3).Shape()
     vec = gp_Vec(-1, 0, 0)
@@ -249,11 +292,18 @@ def move_to_box2(iname, oname, visualize=False):
     box = BRepPrimAPI_MakeBox(gp_Pnt(-1, -1, -3), 3, 3, 3).Shape()
     vec = gp_Vec(0, 0, 1)
     solids = slice_and_move(solids, box, vec)
-    create_compound(solids, foam, builder)
-    breptools_Write(foam, oname)
+    create_compound(solids, cells, builder)
+    breptools_Write(cells, cname)
     if visualize:
         display, start_display, add_menu, add_function_to_menu = init_display()
-        display.DisplayShape(foam, update=True)
+        display.DisplayShape(cells, update=True)
+        start_display()
+    box = BRepPrimAPI_MakeBox(gp_Pnt(0, 0, 0), 1, 1, 1).Shape()
+    walls = BRepAlgoAPI_Cut(box, cells).Shape()
+    breptools_Write(walls, wname)
+    if visualize:
+        display, start_display, add_menu, add_function_to_menu = init_display()
+        display.DisplayShape(walls, update=True)
         start_display()
 
 

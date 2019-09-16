@@ -483,6 +483,35 @@ def split_loops(edat, key):
                 break
 
 
+def split_loops2(edat, key):
+    """Makes sure that line and surface loops contain only one loop.
+
+    Surfaces and volumes with holes are instead defined in Surface and Volume
+    entries, respectively. Needed because gmsh unrolls geometry in a way, which
+    is unusable with OpenCASCADE kernel.
+
+    Args:
+        edat (dict): extracted geometry data
+        key (str): type of geometry
+    """
+    if key == 'line_loop':
+        key0 = 'line'
+        key2 = 'surface'
+    elif key == 'surface_loop':
+        key0 = 'surface'
+        key2 = 'volume'
+    else:
+        raise Exception('can be called only for line_loop or surface_loop')
+    for i, item in edat[key].items():
+        if set(edat[key0][item[0]]).isdisjoint(edat[key0][item[-1]]):
+            print(item)
+            for j in range(len(item) - 1):
+                if set(edat[key0][item[j]]).isdisjoint(edat[key0][item[j + 1]]):
+                    print(j, edat[key0][item[j]], edat[key0][item[j + 1]])
+            raise Exception('{0} {1} contains multiple loops'.format(key, i))
+
+
+
 def move_to_box(infile, wfile, outfile, mvol):
     """Moves periodic closed foam to periodic box.
 
@@ -638,7 +667,17 @@ def create_walls(edat, wall_thickness=0.01):
     Args:
         edat (dict): extracted geometry data
         wall_thickness (float, optional): shrinking parameter
+
+    Returns:
+        list: [cell data, wall data]
     """
+    xdat = dict()  # new cell data
+    xdat['point'] = dict()
+    xdat['line'] = dict()
+    xdat['line_loop'] = dict()
+    xdat['surface'] = dict()
+    xdat['surface_loop'] = dict()
+    xdat['volume'] = dict()
     volume_points = dict()  # point IDs for each volume
     for volume in edat['surface_loop']:
         volume_points[volume] = []
@@ -663,26 +702,40 @@ def create_walls(edat, wall_thickness=0.01):
         point_map = dict()  # mapping of old points to new points
         nvolumes += 1
         edat['surface_loop'][nvolumes] = []
+        xdat['surface_loop'][nvolumes] = []
         for point in volume_points[volume]:
             npoints += 1
             edat['point'][npoints] = edat['point'][point] + wall_thickness * (
+                centroids[volume] - edat['point'][point])
+            xdat['point'][npoints] = edat['point'][point] + wall_thickness * (
                 centroids[volume] - edat['point'][point])
             point_map[point] = npoints
         for surface in edat['surface_loop'][volume]:
             nsurfaces += 1
             edat['line_loop'][nsurfaces] = []
+            xdat['line_loop'][nsurfaces] = []
             for line in edat['line_loop'][surface]:
                 nlines += 1
                 edat['line'][nlines] = [
                     point_map[edat['line'][line][0]],
                     point_map[edat['line'][line][1]],
                 ]
+                xdat['line'][nlines] = [
+                    point_map[edat['line'][line][0]],
+                    point_map[edat['line'][line][1]],
+                ]
                 edat['line_loop'][nsurfaces] += [nlines]
+                xdat['line_loop'][nsurfaces] += [nlines]
             edat['surface'][nsurfaces] = [nsurfaces]
             edat['surface_loop'][nvolumes] += [nsurfaces]
-        edat['volume'][nvolumes] = [nvolumes]
+            xdat['surface'][nsurfaces] = [nsurfaces]
+            xdat['surface_loop'][nvolumes] += [nsurfaces]
+        # edat['volume'][nvolumes] = [nvolumes]
+        xdat['volume'][nvolumes] = [nvolumes]
         edat['volume'][volume] += [nvolumes]
     remove_duplicity(edat)
+    remove_duplicity(xdat)
+    return xdat, edat
 
 
 def restore_sizing(edat):
@@ -744,3 +797,83 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         fhl.write(r'Field[5].FieldsList = {2, 4};' + '\n')
         fhl.write('Background Field = 5;\n')
         fhl.write('Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
+
+
+def label_geo(iname, oname, pvname):
+    """Define periodic surfaces and physical volume.
+
+    Assumes bounding box [0, 1] in all directions.
+
+    Args:
+        iname (str): input filename
+        oname (str): output filename
+    """
+    eps = 1e-6
+    xmin = ymin = zmin = 0
+    xmax = ymax = zmax = 1
+    base = '{{{0}, {1}, {2}, {3}, {4}, {5}}}'
+    base2 = '{{{0}, {1}, {2}}}'
+    with open(oname, 'w') as fhl:
+        fhl.write('Merge "{}";\n'.format(iname))
+        fhl.write('v() = Volume In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('s1() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmin + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('s2() = Surface In BoundingBox ' + base.format(
+            xmax - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('s3() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymin + eps, zmax + eps) + ';\n')
+        fhl.write('s4() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymax - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('Periodic Surface {s2()} = {s1()} Translate'
+                  + base2.format(xmax - xmin, 0, 0) + ';\n')
+        fhl.write('Periodic Surface {s4()} = {s3()} Translate'
+                  + base2.format(0, ymax - ymin, 0) + ';\n')
+        fhl.write('Physical Volume({}) = {{v()}};\n'.format(pvname))
+
+
+def merge_and_label_geo(inames, oname):
+    """Merge geometry files. Define periodic surfaces and physical volume.
+
+    Assumes bounding box [0, 1] in all directions.
+
+    Args:
+        inames (list): input filenames
+        oname (str): output filename
+    """
+    eps = 1e-6
+    xmin = ymin = zmin = 0
+    xmax = ymax = zmax = 1
+    base = '{{{0}, {1}, {2}, {3}, {4}, {5}}}'
+    base2 = '{{{0}, {1}, {2}}}'
+    with open(oname, 'w') as fhl:
+        for i, iname in enumerate(inames):
+            fhl.write('Merge "{}";\n'.format(iname))
+            fhl.write('v{}() = Volume In BoundingBox '.format(i)
+                      + base.format(xmin - eps, ymin - eps, zmin - eps,
+                                    xmax + eps, ymax + eps, zmax + eps)
+                      + ';\n')
+            for j in range(i):
+                fhl.write('v{0}() -= v{1}();\n'.format(i, j))
+            fhl.write('Physical Volume({0}) = {{v{0}()}};\n'.format(i))
+        fhl.write('s1() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmin + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('s2() = Surface In BoundingBox ' + base.format(
+            xmax - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('s3() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymin + eps, zmax + eps) + ';\n')
+        fhl.write('s4() = Surface In BoundingBox ' + base.format(
+            xmin - eps, ymax - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
+        fhl.write('Periodic Surface {s2()} = {s1()} Translate'
+                  + base2.format(xmax - xmin, 0, 0) + ';\n')
+        fhl.write('Periodic Surface {s4()} = {s3()} Translate'
+                  + base2.format(0, ymax - ymin, 0) + ';\n')
