@@ -139,8 +139,7 @@ def generate(cfg):
         print(term.yellow + "Creating final morphology." + term.normal)
         morphology.make_walls(cfg.filename,
                               cfg.morph.dwall,
-                              cfg.morph.clean,
-                              cfg.verbose)
+                              cfg.morph.clean)
     if cfg.umesh.active:
         print(term.yellow + "Creating unstructured mesh." + term.normal)
         umesh.unstructured_mesh(cfg.filename,

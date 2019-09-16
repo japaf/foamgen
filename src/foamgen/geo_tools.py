@@ -463,6 +463,8 @@ def split_loops(edat, key):
     entries, respectively. Needed because gmsh unrolls geometry in a way, which
     is unusable with OpenCASCADE kernel.
 
+    This function is slow. It does not catch all loops.
+
     Args:
         edat (dict): extracted geometry data
         key (str): type of geometry
@@ -481,35 +483,6 @@ def split_loops(edat, key):
                 edat[key][i] = item1
                 edat[key2][i] = [i, j]
                 break
-
-
-def split_loops2(edat, key):
-    """Makes sure that line and surface loops contain only one loop.
-
-    Surfaces and volumes with holes are instead defined in Surface and Volume
-    entries, respectively. Needed because gmsh unrolls geometry in a way, which
-    is unusable with OpenCASCADE kernel.
-
-    Args:
-        edat (dict): extracted geometry data
-        key (str): type of geometry
-    """
-    if key == 'line_loop':
-        key0 = 'line'
-        key2 = 'surface'
-    elif key == 'surface_loop':
-        key0 = 'surface'
-        key2 = 'volume'
-    else:
-        raise Exception('can be called only for line_loop or surface_loop')
-    for i, item in edat[key].items():
-        if set(edat[key0][item[0]]).isdisjoint(edat[key0][item[-1]]):
-            print(item)
-            for j in range(len(item) - 1):
-                if set(edat[key0][item[j]]).isdisjoint(edat[key0][item[j + 1]]):
-                    print(j, edat[key0][item[j]], edat[key0][item[j + 1]])
-            raise Exception('{0} {1} contains multiple loops'.format(key, i))
-
 
 
 def move_to_box(infile, wfile, outfile, mvol):
@@ -797,44 +770,6 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         fhl.write(r'Field[5].FieldsList = {2, 4};' + '\n')
         fhl.write('Background Field = 5;\n')
         fhl.write('Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
-
-
-def label_geo(iname, oname, pvname):
-    """Define periodic surfaces and physical volume.
-
-    Assumes bounding box [0, 1] in all directions.
-
-    Args:
-        iname (str): input filename
-        oname (str): output filename
-    """
-    eps = 1e-6
-    xmin = ymin = zmin = 0
-    xmax = ymax = zmax = 1
-    base = '{{{0}, {1}, {2}, {3}, {4}, {5}}}'
-    base2 = '{{{0}, {1}, {2}}}'
-    with open(oname, 'w') as fhl:
-        fhl.write('Merge "{}";\n'.format(iname))
-        fhl.write('v() = Volume In BoundingBox ' + base.format(
-            xmin - eps, ymin - eps, zmin - eps,
-            xmax + eps, ymax + eps, zmax + eps) + ';\n')
-        fhl.write('s1() = Surface In BoundingBox ' + base.format(
-            xmin - eps, ymin - eps, zmin - eps,
-            xmin + eps, ymax + eps, zmax + eps) + ';\n')
-        fhl.write('s2() = Surface In BoundingBox ' + base.format(
-            xmax - eps, ymin - eps, zmin - eps,
-            xmax + eps, ymax + eps, zmax + eps) + ';\n')
-        fhl.write('s3() = Surface In BoundingBox ' + base.format(
-            xmin - eps, ymin - eps, zmin - eps,
-            xmax + eps, ymin + eps, zmax + eps) + ';\n')
-        fhl.write('s4() = Surface In BoundingBox ' + base.format(
-            xmin - eps, ymax - eps, zmin - eps,
-            xmax + eps, ymax + eps, zmax + eps) + ';\n')
-        fhl.write('Periodic Surface {s2()} = {s1()} Translate'
-                  + base2.format(xmax - xmin, 0, 0) + ';\n')
-        fhl.write('Periodic Surface {s4()} = {s3()} Translate'
-                  + base2.format(0, ymax - ymin, 0) + ';\n')
-        fhl.write('Physical Volume({}) = {{v()}};\n'.format(pvname))
 
 
 def merge_and_label_geo(inames, oname):

@@ -8,7 +8,6 @@ Morphology module
 from __future__ import print_function
 import os
 import time
-import shutil
 import numpy as np
 from blessings import Terminal
 from OCC.Core.gp import gp_Pnt, gp_Vec, gp_Trsf
@@ -23,7 +22,7 @@ from OCC.Extend.TopologyUtils import TopologyExplorer
 from . import geo_tools as gt
 
 
-def make_walls(fname, wall_thickness, clean, verbose):
+def make_walls(fname, wall_thickness, clean):
     """Add walls to a tessellated foam.
 
     It is assumed that input file uses gmsh built-in kernel. Final geometry is
@@ -36,7 +35,6 @@ def make_walls(fname, wall_thickness, clean, verbose):
         fname (str): base filename
         wall_thickness (float): wall thickness parameter
         clean (bool): delete redundant files if True
-        verbose (bool): print additional info to stdout if True
     """
     term = Terminal()
     # create walls
@@ -56,18 +54,10 @@ def make_walls(fname, wall_thickness, clean, verbose):
     # wname = fname + "WallsBox.geo"
     cname = fname + "CellsBox.brep"
     wname = fname + "WallsBox.brep"
-    to_box(iname, cname, wname, ncells, verbose)
+    to_box(iname, cname, wname, ncells)
+    # create morphology file
     oname = fname + "Morphology.geo"
     gt.merge_and_label_geo([cname, wname], oname)
-    # exit()
-    # finalize_geo(cname, cname, verbose)
-    # finalize_geo(wname, wname, verbose)
-    # iname = wname
-    # to_box(iname, oname, ncells, verbose)
-    # # overwrite morphology file
-    # iname = oname
-    # oname = fname + "Morphology.geo"
-    # shutil.copy2(iname, oname)
     # delete redundant files
     if clean:
         clean_files()
@@ -110,39 +100,32 @@ def add_walls(iname, cname, wname, wall_thickness):
     return ncells
 
 
-def to_box(iname, cname, wname, ncells, verbose, method='pythonocc'):
+def to_box(iname, cname, wname, ncells, method='pythonocc'):
     """Move foam to periodic box.
 
     Remove point duplicity, restore OpenCASCADE compatibility, define periodic
     and physical surfaces.
+
+    Only pythonocc method is currently functional.
 
     Args:
         iname (str): input filename
         cname (str): output filename with cells
         wname (str): output filename with walls
         ncells (int): number of cells
-        verbose (bool): print additional info to stdout if True
         method (str): gmsh or pythonocc (default)
     """
     print(time.asctime(), 'to_box')
     if method == 'gmsh':
         # oname = 'temp.geo'
         # move foam to a periodic box and save it to a file
-        gt.move_to_box(iname, "move_to_box.geo", oname, ncells)
+        gt.move_to_box(iname, "move_to_box.geo", cname, ncells)
     elif method == 'pythonocc':
         # convert to BREP
         tname1 = "temp.brep"
         gt.geo2brep(iname, tname1)
-        # move foam to a periodic box and save it to a file
-        # tname2 = "FoamCellsBox.brep"
-        # tname3 = "FoamWallsBox.brep"
+        # move foam to a periodic box and save it to files
         move_to_box(tname1, cname, wname, False)
-        # convert to geo
-        # oname = "temp.geo"
-        # gt.label_geo(tname2, cname, 1)
-        # gt.label_geo(tname3, wname, 2)
-        # gt.brep2geo(tname2, cname)
-        # gt.brep2geo(tname3, wname)
     else:
         raise Exception('Only gmsh and pythonocc methods implemented.')
     print(time.asctime(), 'boxed')
@@ -161,8 +144,8 @@ def finalize_geo(iname, oname, verbose, method='pythonocc'):
     gt.remove_duplicity(edat)
     print(time.asctime(), 'duplicity')
     # restore OpenCASCADE compatibility
-    gt.split_loops2(edat, 'line_loop')
-    gt.split_loops2(edat, 'surface_loop')
+    gt.split_loops(edat, 'line_loop')
+    gt.split_loops(edat, 'surface_loop')
     print(time.asctime(), 'compatibility')
     # identification of physical surfaces for boundary conditions
     surf0 = gt.surfaces_in_plane(edat, 0.0, 2)
@@ -295,14 +278,14 @@ def move_to_box(iname, cname, wname, visualize=False):
     create_compound(solids, cells, builder)
     breptools_Write(cells, cname)
     if visualize:
-        display, start_display, add_menu, add_function_to_menu = init_display()
+        display, start_display, _, _ = init_display()
         display.DisplayShape(cells, update=True)
         start_display()
     box = BRepPrimAPI_MakeBox(gp_Pnt(0, 0, 0), 1, 1, 1).Shape()
     walls = BRepAlgoAPI_Cut(box, cells).Shape()
     breptools_Write(walls, wname)
     if visualize:
-        display, start_display, add_menu, add_function_to_menu = init_display()
+        display, start_display, _, _ = init_display()
         display.DisplayShape(walls, update=True)
         start_display()
 
