@@ -739,11 +739,15 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         sizing (list): mesh size near points, edges and in cells
         char_length (float, optional): gmsh Mesh.CharacteristicLengthMax
     """
-    sdat = read_geo(fname + "Morphology.geo")
-    edat = extract_data(sdat)
-    edges = r'{' + ','.join(str(x) for x in edat['line'].keys()) + r'}'
+    eps = 1e-6
+    xmin = ymin = zmin = 0
+    xmax = ymax = zmax = 1
+    base = '{{{0}, {1}, {2}, {3}, {4}, {5}}}'
     with open(fname + 'UMesh.geo', "w") as fhl:
         fhl.write('Include "{}Morphology.geo";\n'.format(fname))
+        fhl.write('e1() = Line In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
         fhl.write('Mesh.CharacteristicLengthMax = {0};\n'.format(char_length))
         fhl.write('psize = {0};\n'.format(sizing[0]))
         fhl.write('esize = {0};\n'.format(sizing[1]))
@@ -759,7 +763,7 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         fhl.write('Field[2].DistMax = 3*csize;\n')
         fhl.write('Field[3] = Distance;\n')
         fhl.write('Field[3].NNodesByEdge = 10;\n')
-        fhl.write('Field[3].EdgesList = {};\n'.format(edges))
+        fhl.write('Field[3].EdgesList = {e1()};\n')
         fhl.write('Field[4] = Threshold;\n')
         fhl.write('Field[4].IField = 2;\n')
         fhl.write('Field[4].LcMin = esize;\n')
