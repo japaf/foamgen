@@ -8,6 +8,7 @@ Generation module
 from __future__ import division, print_function
 import sys
 import datetime
+import logging
 import yaml
 import munch
 import yamlargparse as yp
@@ -120,6 +121,9 @@ def generate(cfg):
     # Creates terminal for colour output
     term = Terminal()
     time_start = datetime.datetime.now()
+    # switch off matplotlib DEBUG messages
+    mpl_logger = logging.getLogger('matplotlib')
+    mpl_logger.setLevel(logging.WARNING)
     if cfg.pack.active:
         print(term.yellow + "Packing spheres." + term.normal)
         packing.pack_spheres(cfg.filename,
