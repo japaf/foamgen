@@ -53,6 +53,7 @@ binvox () {
 }
 
 gsl () {
+    # stopped working for me, try to use conda install -c conda-forge gsl
     sudo apt-get install libgsl-dev
 }
 
@@ -61,4 +62,4 @@ packinggeneration |& tee packinggeneration.log
 neper |& tee neper.log
 voroplusplus |& tee voroplusplus.log
 binvox |& tee binvox.log
-gsl |& gsl.log
+gsl |& tee gsl.log
