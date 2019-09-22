@@ -18,17 +18,27 @@ Foamgen requires following programs and libraries:
   version 1.27 or above recommended
 * `GSL <http://www.gnu.org/software/gsl/>`_
   version 2.3 or above recommended
+* `Fenics <https://fenicsproject.org/>`_
+  version 2019.1.0 or above recommended
+* `pythonocc <https://https://github.com/tpaviot/pythonocc>`_
+  version 0.18.2 or above recommended
 
 You must ensure that these are installed prior to module installation.
+Recommended approach is to use ``conda`` when able. You can download miniconda
+`here <https://docs.conda.io/en/latest/miniconda.html>`_. Create environment
+and install available compiled dependencies::
 
-On Ubuntu 18.04, all of these can be installed using `install_dependencies.sh
+    conda create -n foamgen python pip
+    conda activate foamgen
+    conda install -c conda-forge cmake gsl fenics
+    conda install -c tpaviot -c conda-forge -c dlr-sc -c oce -c pythonocc pythonocc-core=0.18.2 wxPython
+
+Other dependencies are not packaged very well. However, on Ubuntu 18.04, they
+can be installed using `install_dependencies.sh
 <https://github.com/japaf/foamgen/blob/master/install_dependencies.sh>`_
 script::
 
     sudo ./install_dependencies.sh
-
-Moreover, `fenics <https://fenicsproject.org/>`_ (or at least
-``dolfin-convert``) is necessary for mesh conversion.
 
 Other operating systems and Linux distributions are not tested.
 
@@ -39,4 +49,6 @@ Install using ``pip`` as::
 
     pip install .
 
-It compiles the package and installs the ``foamgen`` package and executable.
+It compiles the package and installs the ``foamgen`` package and executable. If
+this fails on cmake compilation, you can check the :ref:`Developer
+Installation` for possible solution.
