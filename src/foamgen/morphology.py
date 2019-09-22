@@ -7,7 +7,6 @@ Morphology module
 """
 from __future__ import print_function
 import os
-import time
 import numpy as np
 from blessings import Terminal
 from OCC.Core.gp import gp_Pnt, gp_Vec, gp_Trsf
@@ -46,12 +45,9 @@ def make_walls(fname, wall_thickness, clean):
         + "Starting from file {}.".format(iname)
         + term.normal
     )
-    print(time.asctime(), 'start')
     ncells = add_walls(iname, cname, wname, wall_thickness)
     # move foam to a periodic box and save it to a file
     iname = cname
-    # cname = fname + "CellsBox.geo"
-    # wname = fname + "WallsBox.geo"
     cname = fname + "CellsBox.brep"
     wname = fname + "WallsBox.brep"
     to_box(iname, cname, wname, ncells)
@@ -115,7 +111,6 @@ def to_box(iname, cname, wname, ncells, method='pythonocc'):
         ncells (int): number of cells
         method (str): gmsh or pythonocc (default)
     """
-    print(time.asctime(), 'to_box')
     if method == 'gmsh':
         # oname = 'temp.geo'
         # move foam to a periodic box and save it to a file
@@ -128,7 +123,6 @@ def to_box(iname, cname, wname, ncells, method='pythonocc'):
         move_to_box(tname1, cname, wname, False)
     else:
         raise Exception('Only gmsh and pythonocc methods implemented.')
-    print(time.asctime(), 'boxed')
 
 
 def finalize_geo(iname, oname, verbose, method='pythonocc'):
@@ -139,14 +133,11 @@ def finalize_geo(iname, oname, verbose, method='pythonocc'):
     # read boxed foam
     sdat = gt.read_geo(iname)  # string data
     edat = gt.extract_data(sdat)  # extracted data
-    print(time.asctime(), 'read')
     # duplicity of points, lines, etc. was created during moving to a box
     gt.remove_duplicity(edat)
-    print(time.asctime(), 'duplicity')
     # restore OpenCASCADE compatibility
     gt.split_loops(edat, 'line_loop')
     gt.split_loops(edat, 'surface_loop')
-    print(time.asctime(), 'compatibility')
     # identification of physical surfaces for boundary conditions
     surf0 = gt.surfaces_in_plane(edat, 0.0, 2)
     if verbose:
@@ -174,15 +165,12 @@ def finalize_geo(iname, oname, verbose, method='pythonocc'):
         print(
             'surface IDs periodic in Y: {}'.format(edat['periodic_surface_Y'])
         )
-    print(time.asctime(), 'periodicity')
     if method == 'pythonocc':
         edat['physical_volume'] = {'1': edat['volume'].keys()}
     # restore_sizing(edat)
     # save the final foam
     sdat = gt.collect_strings(edat)
-    print(time.asctime(), 'collection')
     gt.save_geo(oname, sdat)
-    print(time.asctime(), 'saved')
 
 
 def translate_topods_from_vector(brep, vec, copy=False):

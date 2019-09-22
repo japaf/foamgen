@@ -752,9 +752,11 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         fhl.write('psize = {0};\n'.format(sizing[0]))
         fhl.write('esize = {0};\n'.format(sizing[1]))
         fhl.write('csize = {0};\n'.format(sizing[2]))
-        fhl.write(r'p1() = PointsOf {Physical Volume {1};};' + '\n')
+        fhl.write('p1() = Point In BoundingBox ' + base.format(
+            xmin - eps, ymin - eps, zmin - eps,
+            xmax + eps, ymax + eps, zmax + eps) + ';\n')
         fhl.write('Field[1] = Distance;\n')
-        fhl.write(r'Field[1].NodesList = {p1()};' + '\n')
+        fhl.write('Field[1].NodesList = {p1()};' + '\n')
         fhl.write('Field[2] = Threshold;\n')
         fhl.write('Field[2].IField = 1;\n')
         fhl.write('Field[2].LcMin = psize;\n')
@@ -771,7 +773,7 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
         fhl.write('Field[4].DistMin = 0;\n')
         fhl.write('Field[4].DistMax = 3*csize;\n')
         fhl.write('Field[5] = Min;\n')
-        fhl.write(r'Field[5].FieldsList = {2, 4};' + '\n')
+        fhl.write('Field[5].FieldsList = {2, 4};' + '\n')
         fhl.write('Background Field = 5;\n')
         fhl.write('Mesh.CharacteristicLengthExtendFromBoundary = 0;\n')
 
@@ -793,13 +795,13 @@ def merge_and_label_geo(inames, oname):
     with open(oname, 'w') as fhl:
         for i, iname in enumerate(inames):
             fhl.write('Merge "{}";\n'.format(iname))
-            fhl.write('v{}() = Volume In BoundingBox '.format(i)
+            fhl.write('v{}() = Volume In BoundingBox '.format(i + 1)
                       + base.format(xmin - eps, ymin - eps, zmin - eps,
                                     xmax + eps, ymax + eps, zmax + eps)
                       + ';\n')
             for j in range(i):
-                fhl.write('v{0}() -= v{1}();\n'.format(i, j))
-            fhl.write('Physical Volume({0}) = {{v{0}()}};\n'.format(i))
+                fhl.write('v{0}() -= v{1}();\n'.format(i + 1, j + 1))
+            fhl.write('Physical Volume({0}) = {{v{0}()}};\n'.format(i + 1))
         fhl.write('s1() = Surface In BoundingBox ' + base.format(
             xmin - eps, ymin - eps, zmin - eps,
             xmin + eps, ymax + eps, zmax + eps) + ';\n')
