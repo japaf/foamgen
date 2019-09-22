@@ -33,8 +33,8 @@ and install available compiled dependencies::
     conda install -c conda-forge cmake gsl fenics
     conda install -c tpaviot -c conda-forge -c dlr-sc -c oce -c pythonocc pythonocc-core=0.18.2 wxPython
 
-Other dependencies are not packaged very well. However, on Ubuntu 18.04, they
-can be installed using `install_dependencies.sh
+Other dependencies cannot be installed that easily. However, on Ubuntu 18.04,
+they can be installed using `install_dependencies.sh
 <https://github.com/japaf/foamgen/blob/master/install_dependencies.sh>`_
 script::
 
@@ -47,7 +47,7 @@ Package
 
 Install using ``pip`` as::
 
-    pip install .
+    pip install foamgen
 
 It compiles the package and installs the ``foamgen`` package and executable. If
 this fails on cmake compilation, you can check the :ref:`Developer

@@ -20,6 +20,4 @@ Hosted online on `Read the Docs <https://foamgen.rtfd.io>`_.
 License
 -------
 
-`MIT`_ © 2019 Pavel Ferkl
-
-.. _MIT: LICENSE
+`MIT <https://github.com/japaf/foamgen/blob/master/LICENSE>`_ © 2019 Pavel Ferkl

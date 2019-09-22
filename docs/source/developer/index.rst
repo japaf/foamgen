@@ -10,3 +10,4 @@ Additional information for developers.
     documentation
     tests
     contribute
+    package

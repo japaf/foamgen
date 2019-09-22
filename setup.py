@@ -16,7 +16,8 @@ ON_RTD = os.environ.get('READTHEDOCS') == 'True'
 
 def long_desc():
     """Create long description."""
-    with open("README.rst", "r") as fhl:
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fhl:
         long_description = fhl.read()
     return long_description
 
@@ -120,7 +121,7 @@ setup(
     keywords='foam generation reconstruction morphology',
     description="Generate virtual closed-cell or open-cell foam structure.",
     long_description=long_desc(),
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://github.com/japaf/foamgen",
     packages=find_packages('src'),
     package_dir={'': 'src'},
