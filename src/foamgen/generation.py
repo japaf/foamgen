@@ -11,7 +11,7 @@ import datetime
 import logging
 import yaml
 import munch
-import yamlargparse as yp
+import jsonargparse as jp
 from blessings import Terminal
 from . import packing
 from . import tessellation
@@ -23,17 +23,17 @@ from . import smesh
 def parse_cli_and_generate():
     """Parse CLI arguments and call :func:`generate` function.
 
-    Parsing is done using `yamlargparse
-    <https://pypi.org/project/yamlargparse/>`_. This function is called by the
+    Parsing is done using `jsonargparse
+    <https://omni-us.github.io/jsonargparse/>`_. This function is called by the
     ``foamgen`` executable.
     """
-    prs = yp.ArgumentParser(
+    prs = jp.ArgumentParser(
         prog='foamgen',
-        error_handler=yp.usage_and_exit_error_handler,
+        error_handler=jp.usage_and_exit_error_handler,
         description='Generate foam morphology.')
     prs.add_argument('-v', '--verbose', default=False,
                      action='store_true', help='verbose output')
-    prs.add_argument('-c', '--config', action=yp.ActionConfigFile,
+    prs.add_argument('-c', '--config', action=jp.ActionConfigFile,
                      help='name of config file')
     prs.add_argument('-f', '--filename', default='Foam',
                      help='base filename')

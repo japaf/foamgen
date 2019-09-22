@@ -132,7 +132,7 @@ setup(
             'foamgen=foamgen.generation:parse_cli_and_generate',
         ],
     },
-    install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'yamlargparse',
+    install_requires=['numpy', 'scipy', 'matplotlib', 'vapory', 'jsonargparse',
                       'blessings', 'spack', 'vtk', 'gmsh-sdk', 'PyYAML',
                       'munch', 'pandas'],
     classifiers=[
