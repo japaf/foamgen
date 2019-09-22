@@ -37,19 +37,21 @@ Outputs
 :::::::
 
 The main output is the ``*Morphology.geo`` file, which contains the foam
-morphology in ``gmsh`` CAD format. The file defines periodic faces for meshing
-purposes and two physical volumes. One for cells:
+morphology that can be read by ``gmsh``. The file defines periodic faces for
+meshing purposes and two physical volumes. Physical volume for cells:
 
 .. image:: ../_images/FoamWallsBox_cells.png
     :width: 100%
 
-and one for walls:
+Physical volume for walls:
 
 .. image:: ../_images/FoamWallsBox_walls.png
     :width: 100%
 
-The file ``*Walls.geo`` contains the exactly same morphology before it was
-moved to a periodic box.
+Files ``*Cells.geo`` and ``*Walls.geo`` contain exactly same morphology before
+it was moved to a periodic box. File ``*CellsBox.brep`` and ``*WallsBox.brep``
+contain the morphology in OpenCASCADE format (without definition of periodicity
+and physical volumes).
 
 Implementation
 ::::::::::::::

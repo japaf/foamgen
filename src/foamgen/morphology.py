@@ -24,11 +24,13 @@ from . import geo_tools as gt
 def make_walls(fname, wall_thickness, clean):
     """Add walls to a tessellated foam.
 
-    It is assumed that input file uses gmsh built-in kernel. Final geometry is
-    created in the OpenCASCADE kernel.
+    Walls are created in gmsh CAD format. Geometry is then converted to BREP
+    format, in which it is moved to periodic box using pythonOCC (separately
+    for cells and walls). Final file merges generated file in gmsh-readable
+    format.
 
-    FileTessellation.geo -> FileWalls.geo -> FileWallsBox.geo ->
-    FileMorphology.geo
+    FileTessellation.geo -> FileCells.geo + FileWalls.geo ->
+    FileCellsBox.brep + FileWallsBox.brep -> FileMorphology.geo
 
     Args:
         fname (str): base filename

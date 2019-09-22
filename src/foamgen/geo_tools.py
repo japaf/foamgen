@@ -723,10 +723,8 @@ def restore_sizing(edat):
         edat['point'][ind] = list(edat['point'][ind]) + ['psize']
 
 
-def prep_mesh_config(fname, sizing, char_length=0.1):
+def prep_mesh_config(iname, oname, sizing, char_length=0.1):
     """Create file specifying meshing parameters.
-
-    Creates ``*UMesh.geo``. File will import ``*Morphology.geo``.
 
     Sizing specified at points, edges and cells and implemented through
     thresholds.
@@ -735,7 +733,8 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
     <http://gmsh.info/doc/texinfo/gmsh.html#Specifying-mesh-element-sizes>`_.
 
     Args:
-        fname (str): base filename
+        iname (str): input filename
+        oname (str): output filename
         sizing (list): mesh size near points, edges and in cells
         char_length (float, optional): gmsh Mesh.CharacteristicLengthMax
     """
@@ -743,8 +742,8 @@ def prep_mesh_config(fname, sizing, char_length=0.1):
     xmin = ymin = zmin = 0
     xmax = ymax = zmax = 1
     base = '{{{0}, {1}, {2}, {3}, {4}, {5}}}'
-    with open(fname + 'UMesh.geo', "w") as fhl:
-        fhl.write('Include "{}Morphology.geo";\n'.format(fname))
+    with open(oname, "w") as fhl:
+        fhl.write('Merge "{}";\n'.format(iname))
         fhl.write('e1() = Line In BoundingBox ' + base.format(
             xmin - eps, ymin - eps, zmin - eps,
             xmax + eps, ymax + eps, zmax + eps) + ';\n')

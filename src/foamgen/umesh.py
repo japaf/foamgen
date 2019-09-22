@@ -20,7 +20,8 @@ def unstructured_mesh(fname, sizing, convert):
         sizing (list): mesh size near points, edges and in cells
         convert (bool): convert mesh to fenics format if True
     """
-    geo_tools.prep_mesh_config(fname, sizing)
+    geo_tools.prep_mesh_config(
+        fname + "Morphology.geo", fname + "UMesh.geo", sizing)
     mesh_domain(fname + "UMesh.geo")
     if convert:
         convert_mesh(fname + "UMesh.msh", fname + "UMesh.xml")
